@@ -1,65 +1,84 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
+import { signOut } from "@/app/actions/auth";
+import { CreateClinicForm } from "@/components/onboarding/create-clinic-form";
+import { AcceptInvitationButton } from "@/components/team/accept-invitation-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUser } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+type PendingInvitation = {
+  membership_id: string;
+  clinic_id: string;
+  clinic_name: string;
+  role: string;
+  invited_at: string;
+};
+
+export default async function Home() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("clinic_members")
+    .select("clinic_id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (membership) {
+    redirect(`/clinic/${membership.clinic_id}`);
+  }
+
+  const { data: pendingData } = await supabase.rpc("get_pending_invitations");
+  const pendingInvitations = (pendingData ?? []) as PendingInvitation[];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-1 items-center justify-center p-4">
+      <div className="flex w-full max-w-sm flex-col gap-4">
+        {pendingInvitations.map((invitation) => (
+          <Card key={invitation.membership_id}>
+            <CardHeader>
+              <CardTitle>You&apos;ve been invited</CardTitle>
+              <CardDescription>
+                Join <span className="font-medium text-foreground">{invitation.clinic_name}</span>{" "}
+                as
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <Badge variant="secondary" className="w-fit capitalize">
+                {invitation.role}
+              </Badge>
+              <AcceptInvitationButton membershipId={invitation.membership_id} />
+            </CardContent>
+          </Card>
+        ))}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Create your clinic</CardTitle>
+            <CardDescription>
+              {pendingInvitations.length > 0
+                ? "Or set up your own clinic instead."
+                : "Your account isn't linked to a clinic yet. Set one up to get started, or ask a clinic owner or admin to add you as a member instead."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <CreateClinicForm />
+            <form action={signOut}>
+              <Button type="submit" variant="outline" className="w-full">
+                Sign out
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
