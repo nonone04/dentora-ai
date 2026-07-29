@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,21 +22,23 @@ type ParsedService =
   | { error: string }
   | { translations: Record<string, string>; duration: number; price: number | null; currency: string };
 
-function parseServiceForm(formData: FormData): ParsedService {
+async function parseServiceForm(formData: FormData): Promise<ParsedService> {
+  const t = await getServerDictionary();
+
   const translations = buildNameTranslations(formData);
   if (Object.keys(translations).length === 0) {
-    return { error: "At least one service name is required." };
+    return { error: t.validation.serviceNameRequired };
   }
 
   const duration = Number(formData.get("defaultDurationMinutes"));
   if (!Number.isFinite(duration) || duration <= 0) {
-    return { error: "Duration must be a positive number of minutes." };
+    return { error: t.validation.durationPositive };
   }
 
   const priceRaw = formData.get("price");
   const price = typeof priceRaw === "string" && priceRaw.trim() ? Number(priceRaw) : null;
   if (price !== null && (!Number.isFinite(price) || price < 0)) {
-    return { error: "Price must be a positive number." };
+    return { error: t.validation.servicePriceInvalid };
   }
 
   const currencyRaw = formData.get("currency");
@@ -52,10 +55,11 @@ export async function createService(
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can manage services." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyServices };
   }
 
-  const parsed = parseServiceForm(formData);
+  const parsed = await parseServiceForm(formData);
   if ("error" in parsed) {
     return parsed;
   }
@@ -85,10 +89,11 @@ export async function updateService(
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can manage services." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyServices };
   }
 
-  const parsed = parseServiceForm(formData);
+  const parsed = await parseServiceForm(formData);
   if ("error" in parsed) {
     return parsed;
   }

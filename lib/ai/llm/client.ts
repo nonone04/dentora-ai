@@ -27,6 +27,14 @@ export type LLMResponse =
   | { type: "text"; text: string; usage?: LLMUsage }
   | { type: "tool_calls"; toolCalls: LLMToolCall[]; usage?: LLMUsage };
 
+/** "auto" (default, omit) lets the model decide; forcing a named tool is how the NLU step gets a reliable structured response instead of free text. */
+export type LLMToolChoice = "auto" | { type: "tool"; name: string };
+
 export interface LLMClient {
-  complete(params: { systemPrompt: string; messages: LLMMessage[]; tools: LLMTool[] }): Promise<LLMResponse>;
+  complete(params: {
+    systemPrompt: string;
+    messages: LLMMessage[];
+    tools: LLMTool[];
+    toolChoice?: LLMToolChoice;
+  }): Promise<LLMResponse>;
 }

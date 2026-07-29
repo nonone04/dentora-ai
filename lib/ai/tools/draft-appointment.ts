@@ -1,5 +1,7 @@
+import { recordDraftCreated } from "@/lib/ai/appointments";
 import { assertActionAllowed } from "@/lib/ai/permissions";
 import type { AITool, AIToolContext } from "@/lib/ai/tools/types";
+import { notifyAppointmentBooked } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function execute(args: Record<string, unknown>, context: AIToolContext) {
@@ -86,6 +88,26 @@ async function execute(args: Record<string, unknown>, context: AIToolContext) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Appointment Lifecycle Engine audit trail (lib/ai/appointments) --
+  // best-effort, see recordDraftCreated; never blocks the draft from
+  // being returned to the patient-facing flow.
+  await recordDraftCreated(supabase, {
+    clinicId: context.clinicId,
+    appointmentDraftId: draft.id,
+    actor: "ai_assistant",
+    conversationId: context.conversationId ?? null,
+  });
+
+  // Notification & Communication Platform (lib/notifications) -- staff
+  // aren't otherwise notified of a new AI-created draft until they
+  // happen to check the AI Inbox. Best-effort, never blocks the draft
+  // from being returned to the patient-facing flow.
+  await notifyAppointmentBooked(supabase, {
+    clinicId: context.clinicId,
+    appointmentDraftId: draft.id,
+    conversationId: context.conversationId ?? null,
+  }).catch((err) => console.error("[ai:tools] draft-created notification failed", err instanceof Error ? err.message : err));
 
   return draft;
 }

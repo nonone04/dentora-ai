@@ -1,0 +1,66 @@
+"use client";
+
+import { Quote } from "lucide-react";
+import { cardHoverClass } from "@/components/marketing/motion/interactive-classes";
+import { Reveal } from "@/components/marketing/motion/reveal";
+import { SectionBackground } from "@/components/marketing/motion/section-background";
+import { useTranslations } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+const AVATAR_STYLES = [
+  "bg-gradient-to-br from-blue-500 to-blue-700",
+  "bg-gradient-to-br from-teal-500 to-teal-700",
+  "bg-gradient-to-br from-slate-500 to-slate-700",
+];
+
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("");
+}
+
+export function TestimonialsSection() {
+  const t = useTranslations();
+  const testimonials = t.marketing.home.testimonials.items;
+
+  return (
+    <section className="defer-offscreen relative overflow-hidden bg-white py-24 dark:bg-slate-950">
+      <SectionBackground intensity="subtle" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal className="mx-auto mb-16 max-w-2xl text-center">
+          <h2 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+            {t.marketing.home.testimonials.title}
+          </h2>
+        </Reveal>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {testimonials.map((item, index) => (
+            <Reveal key={item.name} delay={index * 100} variant="scale">
+              <figure className={cn("flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-7 shadow-sm dark:border-white/10 dark:bg-slate-900", cardHoverClass)}>
+                <Quote className="size-6 text-blue-200 dark:text-blue-500/30" aria-hidden="true" />
+                <blockquote className="mt-4 flex-1 text-balance text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  {item.quote}
+                </blockquote>
+                <figcaption className="mt-6 flex items-center gap-3">
+                  <span
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${AVATAR_STYLES[index % AVATAR_STYLES.length]}`}
+                    aria-hidden="true"
+                  >
+                    {initials(item.name)}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.role}</p>
+                  </div>
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

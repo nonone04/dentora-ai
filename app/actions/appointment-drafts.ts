@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordLifecycleEvent } from "@/lib/ai/appointments";
 import { logAuditEvent } from "@/lib/audit/log";
 import { scheduleAppointmentReminder } from "@/lib/notifications/schedule";
 import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { track } from "@/lib/telemetry";
 
 export type DraftActionState = { error?: string } | undefined;
 
@@ -141,6 +143,27 @@ export async function approveDraft(
     metadata: { appointmentId: appointment.id, patientId: resolvedPatientId },
   });
 
+  // Appointment Lifecycle Engine audit trail (lib/ai/appointments) --
+  // additive alongside the existing audit_logs entry above, which is
+  // the general staff-action log; this one is specific to lifecycle
+  // status transitions and feeds the same trail draft creation and
+  // AI-initiated cancel/reschedule write to. Best-effort, never blocks
+  // the response already computed above.
+  await recordLifecycleEvent(supabase, {
+    clinicId,
+    entityType: "draft",
+    appointmentDraftId: draftId,
+    event: "approve",
+    fromStatus: "draft",
+    toStatus: "draft_approved",
+    actor: "staff",
+    actorId: user.id,
+    metadata: { appointmentId: appointment.id, patientId: resolvedPatientId },
+  });
+
+  await track({ name: "AI Suggestion Accepted", userId: user.id, clinicId });
+  await track({ name: "Appointment Created", userId: user.id, clinicId, properties: { source: "ai_assistant" } });
+
   revalidatePath(`/clinic/${clinicId}/ai-inbox`);
   revalidatePath(`/clinic/${clinicId}/appointments`);
   return undefined;
@@ -178,6 +201,19 @@ export async function rejectDraft(
     entityType: "appointment_draft",
     entityId: draftId,
   });
+
+  await recordLifecycleEvent(supabase, {
+    clinicId,
+    entityType: "draft",
+    appointmentDraftId: draftId,
+    event: "reject",
+    fromStatus: "draft",
+    toStatus: "draft_rejected",
+    actor: "staff",
+    actorId: user.id,
+  });
+
+  await track({ name: "AI Suggestion Dismissed", userId: user.id, clinicId });
 
   revalidatePath(`/clinic/${clinicId}/ai-inbox`);
   return undefined;

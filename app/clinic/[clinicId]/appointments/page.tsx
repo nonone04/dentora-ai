@@ -2,6 +2,7 @@ import { AppointmentStatusForm } from "@/components/appointments/appointment-sta
 import { NewAppointmentDialog } from "@/components/appointments/new-appointment-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime, serviceName } from "@/lib/format";
+import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type AppointmentRow = {
@@ -23,7 +24,7 @@ export default async function AppointmentsPage({
   const { clinicId } = await params;
   const supabase = await createClient();
 
-  const [{ data: appointmentsData }, { data: patients }, { data: dentists }, { data: services }] =
+  const [{ data: appointmentsData }, { data: patients }, { data: dentists }, { data: services }, t, locale] =
     await Promise.all([
       supabase
         .from("appointments")
@@ -46,6 +47,8 @@ export default async function AppointmentsPage({
         .eq("clinic_id", clinicId)
         .eq("is_active", true)
         .order("created_at"),
+      getServerDictionary(),
+      getServerLocale(),
     ]);
 
   const appointments = (appointmentsData ?? []) as unknown as AppointmentRow[];
@@ -54,10 +57,8 @@ export default async function AppointmentsPage({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Appointments</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Upcoming appointments for this clinic.
-          </p>
+          <h1 className="text-lg font-semibold">{t.appointments.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.appointments.description}</p>
         </div>
         <NewAppointmentDialog
           clinicId={clinicId}
@@ -65,34 +66,34 @@ export default async function AppointmentsPage({
           dentists={dentists ?? []}
           services={(services ?? []).map((s) => ({
             id: s.id,
-            name: serviceName(s.name_translations),
+            name: serviceName(s.name_translations, locale),
             defaultDurationMinutes: s.default_duration_minutes,
           }))}
         />
       </div>
 
       {!appointments || appointments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No upcoming appointments.</p>
+        <p className="text-sm text-muted-foreground">{t.appointments.empty}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Dentist</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Start</TableHead>
-              <TableHead>End</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t.appointments.patient}</TableHead>
+              <TableHead>{t.appointments.dentist}</TableHead>
+              <TableHead>{t.appointments.service}</TableHead>
+              <TableHead>{t.appointments.start}</TableHead>
+              <TableHead>{t.appointments.end}</TableHead>
+              <TableHead>{t.appointments.status}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {appointments.map((appt) => (
               <TableRow key={appt.id}>
-                <TableCell>{appt.patients?.full_name ?? "—"}</TableCell>
-                <TableCell>{appt.dentists?.full_name ?? "—"}</TableCell>
-                <TableCell>{serviceName(appt.services?.name_translations)}</TableCell>
-                <TableCell>{formatDateTime(appt.start_at)}</TableCell>
-                <TableCell>{formatDateTime(appt.end_at)}</TableCell>
+                <TableCell>{appt.patients?.full_name ?? t.common.dash}</TableCell>
+                <TableCell>{appt.dentists?.full_name ?? t.common.dash}</TableCell>
+                <TableCell>{serviceName(appt.services?.name_translations, locale)}</TableCell>
+                <TableCell>{formatDateTime(appt.start_at, locale)}</TableCell>
+                <TableCell>{formatDateTime(appt.end_at, locale)}</TableCell>
                 <TableCell>
                   <AppointmentStatusForm
                     clinicId={clinicId}

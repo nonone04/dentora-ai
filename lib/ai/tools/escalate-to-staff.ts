@@ -1,13 +1,19 @@
 import { assertActionAllowed } from "@/lib/ai/permissions";
 import type { AITool, AIToolContext } from "@/lib/ai/tools/types";
-import { getNotificationProvider } from "@/lib/notifications/provider";
+import { notifyEscalation } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-async function execute(args: Record<string, unknown>, context: AIToolContext) {
-  await assertActionAllowed(context.clinicId, "escalate_to_staff");
-
-  const reason = typeof args.reason === "string" && args.reason.trim() ? args.reason.trim() : "No reason given.";
-
+/**
+ * The actual side effect of escalating a conversation -- marking it
+ * escalated and notifying the clinic. Shared by this tool's execute()
+ * (the LLM decides to escalate mid-conversation) and the Decision
+ * Engine's deterministic escalate_to_staff/emergency_workflow verdicts
+ * (lib/ai/orchestrator.ts), which reach this same effect without ever
+ * going through the LLM tool loop. Callers are responsible for their own
+ * assertActionAllowed check first -- this function assumes the caller is
+ * already permitted.
+ */
+export async function performEscalation(context: AIToolContext, reason: string): Promise<void> {
   const supabase = createAdminClient();
 
   // The orchestrator's tool-call loop already logs an ai_messages
@@ -23,18 +29,22 @@ async function execute(args: Record<string, unknown>, context: AIToolContext) {
   }
 
   // Best-effort only -- the conversation status change above is the
-  // source of truth. A clinic without an email on file, or a delivery
-  // failure, should never surface as an error to the patient.
-  const { data: clinic } = await supabase.from("clinics").select("name, email").eq("id", context.clinicId).maybeSingle();
-  if (clinic?.email) {
-    await getNotificationProvider("email")
-      .send({
-        to: clinic.email,
-        subject: `${clinic.name}: AI assistant needs staff attention`,
-        body: `The AI assistant escalated a conversation and needs staff review.\n\nReason: ${reason}`,
-      })
-      .catch(() => undefined);
-  }
+  // source of truth. Routed through the Notification & Communication
+  // Platform (lib/notifications) rather than sending a message directly,
+  // so this staff alert gets the same delivery tracking/retry as every
+  // other notification. A clinic without an email on file, or a
+  // delivery failure, should never surface as an error to the patient.
+  await notifyEscalation(supabase, { clinicId: context.clinicId, conversationId: context.conversationId ?? null, reason }).catch(
+    () => undefined,
+  );
+}
+
+async function execute(args: Record<string, unknown>, context: AIToolContext) {
+  await assertActionAllowed(context.clinicId, "escalate_to_staff");
+
+  const reason = typeof args.reason === "string" && args.reason.trim() ? args.reason.trim() : "No reason given.";
+
+  await performEscalation(context, reason);
 
   return { escalated: true };
 }

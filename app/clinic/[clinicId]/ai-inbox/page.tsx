@@ -1,8 +1,10 @@
 import { DraftActions } from "@/components/ai-inbox/draft-actions";
+import { FeatureUsageBeacon } from "@/components/telemetry/feature-usage-beacon";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime, serviceName } from "@/lib/format";
+import { getServerDictionary, getServerLocale, type Dictionary } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type DraftRow = {
@@ -25,8 +27,8 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   expired: "outline",
 };
 
-function patientLabel(draft: DraftRow) {
-  return draft.patients?.full_name ?? draft.patient_name ?? draft.patient_phone ?? "Unknown";
+function patientLabel(draft: DraftRow, t: Dictionary) {
+  return draft.patients?.full_name ?? draft.patient_name ?? draft.patient_phone ?? t.aiInbox.unknownPatient;
 }
 
 type EscalatedConversationRow = {
@@ -39,8 +41,9 @@ type EscalatedConversationRow = {
 function escalationReason(
   reasonsByConversationId: Map<string, string>,
   conversationId: string,
+  t: Dictionary,
 ): string {
-  return reasonsByConversationId.get(conversationId) ?? "No reason logged.";
+  return reasonsByConversationId.get(conversationId) ?? t.aiInbox.noReasonLogged;
 }
 
 export default async function AIInboxPage({
@@ -51,7 +54,7 @@ export default async function AIInboxPage({
   const { clinicId } = await params;
   const supabase = await createClient();
 
-  const [{ data: pendingData }, { data: historyData }, { data: escalatedData }] = await Promise.all([
+  const [{ data: pendingData }, { data: historyData }, { data: escalatedData }, t, locale] = await Promise.all([
     supabase
       .from("appointment_drafts")
       .select(
@@ -76,6 +79,8 @@ export default async function AIInboxPage({
       .eq("status", "escalated")
       .order("updated_at", { ascending: false })
       .limit(30),
+    getServerDictionary(),
+    getServerLocale(),
   ]);
 
   const pending = (pendingData ?? []) as unknown as DraftRow[];
@@ -105,31 +110,30 @@ export default async function AIInboxPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <FeatureUsageBeacon feature="ai_inbox" clinicId={clinicId} />
       <div>
-        <h1 className="text-lg font-semibold">AI inbox</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Appointments proposed by the AI assistant, waiting for staff review.
-        </p>
+        <h1 className="text-lg font-semibold">{t.aiInbox.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t.aiInbox.description}</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Pending review</h2>
+        <h2 className="text-base font-semibold">{t.aiInbox.pendingReview}</h2>
         {pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing to review right now.</p>
+          <p className="text-sm text-muted-foreground">{t.aiInbox.pendingEmpty}</p>
         ) : (
           pending.map((draft) => (
             <Card key={draft.id}>
               <CardContent className="flex items-start justify-between gap-4 pt-6">
                 <div>
-                  <div className="font-medium">{patientLabel(draft)}</div>
+                  <div className="font-medium">{patientLabel(draft, t)}</div>
                   {draft.patient_phone && !draft.patients && (
                     <div className="text-xs text-muted-foreground">{draft.patient_phone}</div>
                   )}
                   <div className="mt-1 text-sm text-muted-foreground">
-                    {draft.dentists?.full_name ?? "—"} · {serviceName(draft.services?.name_translations)}
+                    {draft.dentists?.full_name ?? t.common.dash} · {serviceName(draft.services?.name_translations, locale)}
                   </div>
                   <div className="mt-1 text-sm">
-                    {formatDateTime(draft.proposed_start_at)} – {formatDateTime(draft.proposed_end_at)}
+                    {formatDateTime(draft.proposed_start_at, locale)} – {formatDateTime(draft.proposed_end_at, locale)}
                   </div>
                   {draft.notes && <div className="mt-1 text-sm text-muted-foreground">{draft.notes}</div>}
                 </div>
@@ -141,28 +145,28 @@ export default async function AIInboxPage({
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">History</h2>
+        <h2 className="text-base font-semibold">{t.aiInbox.history}</h2>
         {history.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No reviewed drafts yet.</p>
+          <p className="text-sm text-muted-foreground">{t.aiInbox.historyEmpty}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead>Dentist</TableHead>
-                <TableHead>Proposed</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t.aiInbox.patient}</TableHead>
+                <TableHead>{t.aiInbox.dentist}</TableHead>
+                <TableHead>{t.aiInbox.proposed}</TableHead>
+                <TableHead>{t.aiInbox.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {history.map((draft) => (
                 <TableRow key={draft.id}>
-                  <TableCell>{patientLabel(draft)}</TableCell>
-                  <TableCell>{draft.dentists?.full_name ?? "—"}</TableCell>
-                  <TableCell>{formatDateTime(draft.proposed_start_at)}</TableCell>
+                  <TableCell>{patientLabel(draft, t)}</TableCell>
+                  <TableCell>{draft.dentists?.full_name ?? t.common.dash}</TableCell>
+                  <TableCell>{formatDateTime(draft.proposed_start_at, locale)}</TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[draft.status] ?? "secondary"} className="capitalize">
-                      {draft.status}
+                    <Badge variant={STATUS_VARIANT[draft.status] ?? "secondary"}>
+                      {t.draftStatus[draft.status as keyof typeof t.draftStatus] ?? draft.status}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -173,24 +177,22 @@ export default async function AIInboxPage({
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Escalated</h2>
-        <p className="text-sm text-muted-foreground">
-          Conversations the AI assistant handed off to staff, or couldn&apos;t complete on its own.
-        </p>
+        <h2 className="text-base font-semibold">{t.aiInbox.escalated}</h2>
+        <p className="text-sm text-muted-foreground">{t.aiInbox.escalatedDescription}</p>
         {escalated.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing escalated right now.</p>
+          <p className="text-sm text-muted-foreground">{t.aiInbox.escalatedEmpty}</p>
         ) : (
           escalated.map((conversation) => (
             <Card key={conversation.id}>
               <CardContent className="flex items-start justify-between gap-4 pt-6">
                 <div>
-                  <div className="font-medium">{conversation.patients?.full_name ?? "Unknown patient"}</div>
+                  <div className="font-medium">{conversation.patients?.full_name ?? t.aiInbox.unknownPatient}</div>
                   <div className="mt-1 text-sm text-muted-foreground capitalize">{conversation.channel}</div>
                   <div className="mt-1 text-sm">
-                    {escalationReason(escalationReasonsByConversationId, conversation.id)}
+                    {escalationReason(escalationReasonsByConversationId, conversation.id, t)}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">{formatDateTime(conversation.updated_at)}</div>
+                <div className="text-xs text-muted-foreground">{formatDateTime(conversation.updated_at, locale)}</div>
               </CardContent>
             </Card>
           ))

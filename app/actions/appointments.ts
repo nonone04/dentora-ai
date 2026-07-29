@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getServerDictionary } from "@/lib/i18n/server";
 import {
   scheduleAppointmentReminder,
   sendAppointmentConfirmation,
@@ -10,6 +11,7 @@ import {
 import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { track } from "@/lib/telemetry";
 
 export type CreateAppointmentFormState = { error?: string; success?: boolean } | undefined;
 export type UpdateStatusFormState = { error?: string } | undefined;
@@ -30,24 +32,26 @@ export async function createAppointment(
   const durationMinutes = formData.get("durationMinutes");
   const notes = formData.get("notes");
 
+  const t = await getServerDictionary();
+
   if (typeof patientId !== "string" || !patientId) {
-    return { error: "Patient is required." };
+    return { error: t.validation.patientRequired };
   }
   if (typeof dentistId !== "string" || !dentistId) {
-    return { error: "Dentist is required." };
+    return { error: t.validation.dentistRequired };
   }
   if (typeof startAt !== "string" || !startAt) {
-    return { error: "Start time is required." };
+    return { error: t.validation.startTimeRequired };
   }
 
   const start = new Date(startAt);
   if (Number.isNaN(start.getTime())) {
-    return { error: "Start time is invalid." };
+    return { error: t.validation.startTimeInvalid };
   }
 
   const duration = Number(durationMinutes);
   if (!Number.isFinite(duration) || duration <= 0) {
-    return { error: "Duration must be a positive number of minutes." };
+    return { error: t.validation.durationPositive };
   }
 
   const end = new Date(start.getTime() + duration * 60_000);
@@ -70,7 +74,7 @@ export async function createAppointment(
 
   if (error) {
     if (error.code === "23P01") {
-      return { error: "This dentist already has an appointment at that time." };
+      return { error: t.validation.dentistDoubleBooked };
     }
     return { error: error.message };
   }
@@ -95,6 +99,8 @@ export async function createAppointment(
     channel: patient?.preferred_contact_channel ?? "email",
   });
 
+  await track({ name: "Appointment Created", userId: user.id, clinicId, properties: { source: "staff" } });
+
   revalidatePath(`/clinic/${clinicId}/appointments`);
   return { success: true };
 }
@@ -109,7 +115,8 @@ export async function updateAppointmentStatus(
 
   const status = formData.get("status");
   if (typeof status !== "string" || !VALID_STATUSES.includes(status)) {
-    return { error: "Invalid status." };
+    const t = await getServerDictionary();
+    return { error: t.validation.invalidStatus };
   }
 
   const supabase = await createClient();
@@ -139,6 +146,10 @@ export async function updateAppointmentStatus(
     entityId: appointmentId,
     metadata: { from: previous?.status ?? null, to: status },
   });
+  await track({ name: "Appointment Updated", userId: user.id, clinicId, properties: { status } });
+  if (status === "cancelled") {
+    await track({ name: "Appointment Cancelled", userId: user.id, clinicId });
+  }
 
   if (status === "cancelled") {
     await skipPendingReminders(appointmentId);

@@ -1,4 +1,4 @@
-import type { LLMClient, LLMMessage, LLMResponse, LLMTool } from "@/lib/ai/llm/client";
+import type { LLMClient } from "@/lib/ai/llm/client";
 
 /**
  * Default when ANTHROPIC_API_KEY isn't configured (true of this
@@ -8,14 +8,7 @@ import type { LLMClient, LLMMessage, LLMResponse, LLMTool } from "@/lib/ai/llm/c
  * answer) can be verified mechanically without a real model.
  */
 export class MockLLMClient implements LLMClient {
-  async complete({
-    messages,
-    tools,
-  }: {
-    systemPrompt: string;
-    messages: LLMMessage[];
-    tools: LLMTool[];
-  }): Promise<LLMResponse> {
+  async complete({ messages, tools }: Parameters<LLMClient["complete"]>[0]): ReturnType<LLMClient["complete"]> {
     const last = messages[messages.length - 1];
 
     // A tool result just came back -- summarize it as the final answer.

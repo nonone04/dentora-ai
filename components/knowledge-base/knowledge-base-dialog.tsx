@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "@/lib/i18n";
 
 const initialState: ActionFormState = undefined;
 
@@ -58,6 +59,7 @@ export function KnowledgeBaseDialog({
   const [state, action, pending] = useActionState(boundAction, initialState);
   const [handledState, setHandledState] = useState(state);
   const [open, setOpen] = useState(false);
+  const t = useTranslations();
 
   if (state !== handledState) {
     setHandledState(state);
@@ -73,19 +75,19 @@ export function KnowledgeBaseDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{entry ? "Edit entry" : "New entry"}</DialogTitle>
+          <DialogTitle>{entry ? t.knowledgeBase.dialog.editTitle : t.knowledgeBase.dialog.newTitle}</DialogTitle>
           <DialogDescription>
-            {entry ? "Update this knowledge base entry." : "Add an entry to the knowledge base."}
+            {entry ? t.knowledgeBase.dialog.editDescription : t.knowledgeBase.dialog.newDescription}
           </DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-3">
-          <Field label="Category (optional)">
+          <Field label={`${t.knowledgeBase.dialog.categoryLabel} (${t.common.optional})`}>
             <Input name="category" defaultValue={entry?.category ?? ""} />
           </Field>
-          <Field label="Question">
+          <Field label={t.knowledgeBase.dialog.questionLabel}>
             <Input name="question" defaultValue={entry?.question} required />
           </Field>
-          <Field label="Answer">
+          <Field label={t.knowledgeBase.dialog.answerLabel}>
             <Textarea name="answer" rows={4} defaultValue={entry?.answer} required />
           </Field>
           {entry && (
@@ -96,13 +98,13 @@ export function KnowledgeBaseDialog({
                 defaultChecked={entry.is_active}
                 className="size-4 rounded border-input"
               />
-              Active
+              {t.knowledgeBase.dialog.activeLabel}
             </label>
           )}
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving..." : entry ? "Save changes" : "Create entry"}
+              {pending ? t.common.saving : entry ? t.knowledgeBase.dialog.save : t.knowledgeBase.dialog.create}
             </Button>
           </DialogFooter>
         </form>

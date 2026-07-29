@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/format";
+import type { Dictionary, Locale } from "@/lib/i18n";
 
 type NoteRow = {
   id: string;
@@ -26,11 +27,15 @@ export function MedicalNotesSection({
   patientId,
   notes,
   appointments,
+  t,
+  locale,
 }: {
   clinicId: string;
   patientId: string;
   notes: NoteRow[];
   appointments: AppointmentOption[];
+  t: Dictionary;
+  locale: Locale;
 }) {
   const [state, action, pending] = useActionState(
     addMedicalNote.bind(null, clinicId, patientId),
@@ -38,20 +43,20 @@ export function MedicalNotesSection({
   );
 
   return (
-    <Card>
+    <Card id="medical-notes">
       <CardHeader>
-        <CardTitle>Medical notes</CardTitle>
+        <CardTitle>{t.patientDetail.medicalNotes.title}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {notes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No notes yet.</p>
+          <p className="text-sm text-muted-foreground">{t.patientDetail.medicalNotes.empty}</p>
         ) : (
           <ul className="flex flex-col gap-3 text-sm">
             {notes.map((n) => (
               <li key={n.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{n.profiles?.full_name ?? "Unknown"}</span>
-                  <span>{formatDateTime(n.created_at)}</span>
+                  <span>{n.profiles?.full_name ?? t.patientDetail.medicalNotes.unknownAuthor}</span>
+                  <span>{formatDateTime(n.created_at, locale)}</span>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap">{n.note}</p>
               </li>
@@ -60,20 +65,20 @@ export function MedicalNotesSection({
         )}
 
         <form action={action} className="flex flex-col gap-2 border-t border-border pt-4">
-          <Textarea name="note" rows={3} placeholder="Add a note..." required />
+          <Textarea name="note" rows={3} placeholder={t.patientDetail.medicalNotes.placeholder} required />
           {appointments.length > 0 && (
             <select name="appointmentId" defaultValue="" className={selectClass}>
-              <option value="">Not linked to an appointment</option>
+              <option value="">{t.patientDetail.medicalNotes.notLinked}</option>
               {appointments.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {formatDateTime(a.start_at)}
+                  {formatDateTime(a.start_at, locale)}
                 </option>
               ))}
             </select>
           )}
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <Button type="submit" disabled={pending} size="sm" className="self-start">
-            {pending ? "Adding..." : "Add note"}
+            {pending ? t.patientDetail.medicalNotes.adding : t.patientDetail.medicalNotes.add}
           </Button>
         </form>
       </CardContent>

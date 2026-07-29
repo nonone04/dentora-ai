@@ -7,7 +7,19 @@ export type AuditAction =
   | "member_invited"
   | "member_invitation_accepted"
   | "appointment_draft_approved"
-  | "appointment_draft_rejected";
+  | "appointment_draft_rejected"
+  | "member_role_changed"
+  | "member_suspended"
+  | "member_reactivated"
+  | "member_removed"
+  | "ownership_transferred"
+  | "api_key_created"
+  | "api_key_revoked"
+  | "patients_imported"
+  | "dentists_imported"
+  | "services_imported"
+  | "whatsapp_connected"
+  | "whatsapp_disconnected";
 
 export type AuditEvent = {
   clinicId: string;

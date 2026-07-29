@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { track } from "@/lib/telemetry";
 
 export type CreatePatientFormState = { error?: string } | undefined;
 
@@ -15,11 +17,13 @@ export async function createPatient(
   _prevState: CreatePatientFormState,
   formData: FormData,
 ): Promise<CreatePatientFormState> {
-  await requireUser();
+  const user = await requireUser();
+
+  const t = await getServerDictionary();
 
   const fullName = formData.get("fullName");
   if (typeof fullName !== "string" || !fullName.trim()) {
-    return { error: "Full name is required." };
+    return { error: t.validation.fullNameRequired };
   }
 
   const preferredLanguage = formData.get("preferredLanguage");
@@ -57,10 +61,12 @@ export async function createPatient(
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "A patient with this phone number already exists." };
+      return { error: t.validation.phoneAlreadyExists };
     }
     return { error: error.message };
   }
+
+  await track({ name: "Patient Created", userId: user.id, clinicId });
 
   redirect(`/clinic/${clinicId}/patients/${data.id}`);
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useActionState } from "react";
+import { UserPlus } from "lucide-react";
 import { inviteMember, type ActionFormState } from "@/app/actions/team";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/lib/i18n";
 
 const initialState: ActionFormState = undefined;
 
@@ -30,6 +32,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function InviteMemberDialog({ clinicId }: { clinicId: string }) {
+  const t = useTranslations();
   const [state, action, pending] = useActionState(
     inviteMember.bind(null, clinicId),
     initialState,
@@ -46,30 +49,30 @@ export function InviteMemberDialog({ clinicId }: { clinicId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>Invite member</DialogTrigger>
+      <DialogTrigger render={<Button className="gap-1.5" />}>
+        <UserPlus className="size-4" aria-hidden="true" />
+        {t.staffManagement.members.invite}
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite member</DialogTitle>
-          <DialogDescription>
-            Invite someone to join this clinic. If they don&apos;t have an account yet, we&apos;ll
-            email them an invite link.
-          </DialogDescription>
+          <DialogTitle>{t.staffManagement.invite.title}</DialogTitle>
+          <DialogDescription>{t.staffManagement.invite.description}</DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-3">
-          <Field label="Email">
+          <Field label={t.staffManagement.invite.emailLabel}>
             <Input type="email" name="email" required />
           </Field>
-          <Field label="Role">
+          <Field label={t.staffManagement.invite.roleLabel}>
             <select name="role" defaultValue="receptionist" className={selectClass}>
-              <option value="admin">Admin</option>
-              <option value="dentist">Dentist</option>
-              <option value="receptionist">Receptionist</option>
+              <option value="admin">{t.roles.admin}</option>
+              <option value="dentist">{t.roles.dentist}</option>
+              <option value="receptionist">{t.roles.receptionist}</option>
             </select>
           </Field>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Inviting..." : "Send invitation"}
+              {pending ? t.staffManagement.invite.sending : t.staffManagement.invite.send}
             </Button>
           </DialogFooter>
         </form>

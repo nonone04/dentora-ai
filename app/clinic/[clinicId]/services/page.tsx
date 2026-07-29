@@ -1,7 +1,9 @@
+import { CsvImportWizard } from "@/components/import/csv-import-wizard";
 import { ServiceDialog } from "@/components/services/service-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { serviceName } from "@/lib/format";
+import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
@@ -26,11 +28,15 @@ export default async function ServicesPage({
   const canManage = membership.role === "owner" || membership.role === "admin";
 
   const supabase = await createClient();
-  const { data: servicesData } = await supabase
-    .from("services")
-    .select("id, name_translations, default_duration_minutes, price, currency, is_active")
-    .eq("clinic_id", clinicId)
-    .order("created_at");
+  const [{ data: servicesData }, t, locale] = await Promise.all([
+    supabase
+      .from("services")
+      .select("id, name_translations, default_duration_minutes, price, currency, is_active")
+      .eq("clinic_id", clinicId)
+      .order("created_at"),
+    getServerDictionary(),
+    getServerLocale(),
+  ]);
 
   const services = (servicesData ?? []) as unknown as ServiceRow[];
 
@@ -38,36 +44,41 @@ export default async function ServicesPage({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Services</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Services offered at this clinic.</p>
+          <h1 className="text-lg font-semibold">{t.services.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.services.description}</p>
         </div>
-        {canManage && <ServiceDialog clinicId={clinicId} triggerLabel="New service" />}
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <CsvImportWizard clinicId={clinicId} entity="services" />
+            <ServiceDialog clinicId={clinicId} triggerLabel={t.services.dialog.newTrigger} />
+          </div>
+        )}
       </div>
 
       {services.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No services yet.</p>
+        <p className="text-sm text-muted-foreground">{t.services.empty}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t.services.name}</TableHead>
+              <TableHead>{t.services.duration}</TableHead>
+              <TableHead>{t.services.price}</TableHead>
+              <TableHead>{t.services.status}</TableHead>
               {canManage && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {services.map((service) => (
               <TableRow key={service.id}>
-                <TableCell>{serviceName(service.name_translations)}</TableCell>
-                <TableCell>{service.default_duration_minutes} min</TableCell>
+                <TableCell>{serviceName(service.name_translations, locale)}</TableCell>
                 <TableCell>
-                  {service.price != null ? `${service.price} ${service.currency}` : "—"}
+                  {service.default_duration_minutes} {t.services.minutesSuffix}
                 </TableCell>
+                <TableCell>{service.price != null ? `${service.price} ${service.currency}` : t.common.dash}</TableCell>
                 <TableCell>
                   <Badge variant={service.is_active ? "secondary" : "outline"}>
-                    {service.is_active ? "Active" : "Inactive"}
+                    {service.is_active ? t.common.active : t.common.inactive}
                   </Badge>
                 </TableCell>
                 {canManage && (
@@ -75,7 +86,7 @@ export default async function ServicesPage({
                     <ServiceDialog
                       clinicId={clinicId}
                       service={service}
-                      triggerLabel="Edit"
+                      triggerLabel={t.services.dialog.editTrigger}
                       triggerVariant="ghost"
                       triggerSize="sm"
                     />

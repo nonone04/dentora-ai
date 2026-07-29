@@ -19,3 +19,10 @@ export async function requireUser() {
 
   return user;
 }
+
+/** The current session's id, for marking "this device" in the active-sessions list. */
+export const getCurrentSessionId = cache(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims.session_id ?? null;
+});

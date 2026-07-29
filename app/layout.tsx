@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
+import { getServerLocale } from "@/lib/i18n/server";
+import { LocaleProvider } from "@/lib/i18n/locale-provider";
+import { directionForLocale } from "@/lib/i18n/types";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,17 +21,25 @@ export const metadata: Metadata = {
   description: "AI-powered front desk for dental clinics.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getServerLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={directionForLocale(locale)}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

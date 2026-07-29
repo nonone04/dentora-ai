@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/lib/i18n";
 
 const initialState: ActionFormState = undefined;
 
@@ -30,32 +31,33 @@ export function NewDentistDialog({ clinicId }: { clinicId: string }) {
     createDentist.bind(null, clinicId),
     initialState,
   );
+  const t = useTranslations();
 
   return (
     <Dialog>
-      <DialogTrigger render={<Button />}>New dentist</DialogTrigger>
+      <DialogTrigger render={<Button />}>{t.dentists.dialog.newTitle}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New dentist</DialogTitle>
-          <DialogDescription>Add a dentist to this clinic.</DialogDescription>
+          <DialogTitle>{t.dentists.dialog.newTitle}</DialogTitle>
+          <DialogDescription>{t.dentists.dialog.newDescription}</DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-3">
-          <Field label="Full name">
+          <Field label={t.dentists.dialog.fullNameLabel}>
             <Input name="fullName" required />
           </Field>
-          <Field label="Specialty (optional)">
+          <Field label={`${t.dentists.dialog.specialtyLabel} (${t.common.optional})`}>
             <Input name="specialty" />
           </Field>
-          <Field label="License number (optional)">
+          <Field label={`${t.dentists.dialog.licenseLabel} (${t.common.optional})`}>
             <Input name="licenseNumber" />
           </Field>
-          <Field label="Color (optional)">
+          <Field label={`${t.dentists.dialog.colorLabel} (${t.common.optional})`}>
             <Input name="color" type="color" className="h-8 w-16 p-1" />
           </Field>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Creating..." : "Create dentist"}
+              {pending ? t.common.creating : t.dentists.dialog.create}
             </Button>
           </DialogFooter>
         </form>

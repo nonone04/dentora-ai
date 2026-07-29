@@ -39,6 +39,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -67,6 +75,19 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Semantic accent colors -- additive to the base grayscale system above.
+     Used for health/status indicators, trend deltas, and channel/quick-
+     action highlights across the app (see components/ui/empty-state.tsx,
+     components/dashboard/*). Kept desaturated and clinical rather than
+     saturated/loud, matching a healthcare-professional tone. */
+  --success: oklch(0.6 0.14 150);
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.77 0.15 75);
+  --warning-foreground: oklch(0.28 0.08 75);
+  --info: oklch(0.58 0.12 235);
+  --info-foreground: oklch(0.98 0 0);
+  --brand: oklch(0.58 0.1 195);
+  --brand-foreground: oklch(0.98 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -102,6 +123,14 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --success: oklch(0.7 0.16 150);
+  --success-foreground: oklch(0.15 0.02 150);
+  --warning: oklch(0.8 0.15 75);
+  --warning-foreground: oklch(0.2 0.05 75);
+  --info: oklch(0.68 0.13 235);
+  --info-foreground: oklch(0.15 0.02 235);
+  --brand: oklch(0.7 0.11 195);
+  --brand-foreground: oklch(0.15 0.02 195);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -126,5 +155,122 @@
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
+}
+
+/*
+ * Shared decorative motion for the marketing site's floating accent
+ * badges. Centralized here (rather than per-section <style> blocks) so
+ * every section respects prefers-reduced-motion from one place.
+ */
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+.float-slow-delayed {
+  animation: float-slow 6s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/*
+ * SectionBackground's layered depth effects (components/marketing/motion/
+ * section-background.tsx) -- the "light wave" only ever translates (never
+ * background-position, which is paint-bound and would repaint this
+ * oversized gradient every frame), and the drift-* orbs only ever animate
+ * transform + opacity, per the sprint's performance constraint (no layout
+ * thrashing, no continuously-animated blur/width/height) -- every one of
+ * these stays on the compositor thread.
+ */
+@keyframes wave-drift {
+  from {
+    transform: translate3d(-8%, 0, 0);
+  }
+  to {
+    transform: translate3d(8%, 0, 0);
+  }
+}
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(16px, -20px);
+    opacity: 1;
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-18px, 14px);
+    opacity: 1;
+  }
+}
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(10px, 18px);
+    opacity: 1;
+  }
+}
+.wave-drift {
+  animation: wave-drift 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.drift-a {
+  animation: drift-a 14s ease-in-out infinite;
+}
+.drift-b {
+  animation: drift-b 17s ease-in-out infinite;
+}
+.drift-c {
+  animation: drift-c 20s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .float-slow,
+  .float-slow-delayed,
+  .wave-drift,
+  .drift-a,
+  .drift-b,
+  .drift-c {
+    animation: none;
+  }
+}
+
+/*
+ * Every below-the-fold marketing section wraps its SectionBackground's
+ * always-on drift/wave animations in this -- without it, every section's
+ * orbs keep animating on the compositor for the life of the page even
+ * while scrolled far out of view. `content-visibility: auto` skips
+ * layout/paint/animation work entirely until a section is near the
+ * viewport; `contain-intrinsic-size` gives the browser a placeholder size
+ * up front (refined via `auto` once the real size is measured) so nothing
+ * jumps when it's revealed. Applies regardless of reduced-motion -- it's
+ * a rendering-cost optimization, not a motion one.
+ */
+.defer-offscreen {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
 }

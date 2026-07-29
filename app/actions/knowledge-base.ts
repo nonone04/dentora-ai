@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,15 +9,17 @@ export type ActionFormState = { error?: string; success?: boolean } | undefined;
 
 type ParsedEntry = { error: string } | { category: string | null; question: string; answer: string };
 
-function parseKnowledgeBaseForm(formData: FormData): ParsedEntry {
+async function parseKnowledgeBaseForm(formData: FormData): Promise<ParsedEntry> {
+  const t = await getServerDictionary();
+
   const question = formData.get("question");
   if (typeof question !== "string" || !question.trim()) {
-    return { error: "Question is required." };
+    return { error: t.validation.questionRequired };
   }
 
   const answer = formData.get("answer");
   if (typeof answer !== "string" || !answer.trim()) {
-    return { error: "Answer is required." };
+    return { error: t.validation.answerRequired };
   }
 
   const categoryRaw = formData.get("category");
@@ -32,10 +35,11 @@ export async function createKnowledgeBaseEntry(
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can manage the knowledge base." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyKnowledgeBase };
   }
 
-  const parsed = parseKnowledgeBaseForm(formData);
+  const parsed = await parseKnowledgeBaseForm(formData);
   if ("error" in parsed) {
     return parsed;
   }
@@ -65,10 +69,11 @@ export async function updateKnowledgeBaseEntry(
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can manage the knowledge base." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyKnowledgeBase };
   }
 
-  const parsed = parseKnowledgeBaseForm(formData);
+  const parsed = await parseKnowledgeBaseForm(formData);
   if ("error" in parsed) {
     return parsed;
   }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatDateTime, serviceName } from "@/lib/format";
+import { interpolate, type Dictionary, type Locale } from "@/lib/i18n";
 
 type TreatmentRow = {
   id: string;
@@ -43,6 +44,8 @@ export function TreatmentsSection({
   dentists,
   services,
   appointments,
+  t,
+  locale,
 }: {
   clinicId: string;
   patientId: string;
@@ -50,6 +53,8 @@ export function TreatmentsSection({
   dentists: Option[];
   services: ServiceOption[];
   appointments: AppointmentOption[];
+  t: Dictionary;
+  locale: Locale;
 }) {
   const [state, action, pending] = useActionState(
     addTreatment.bind(null, clinicId, patientId),
@@ -57,30 +62,30 @@ export function TreatmentsSection({
   );
 
   return (
-    <Card>
+    <Card id="treatments">
       <CardHeader>
-        <CardTitle>Treatments</CardTitle>
+        <CardTitle>{t.patientDetail.treatments.title}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {treatments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No treatments recorded yet.</p>
+          <p className="text-sm text-muted-foreground">{t.patientDetail.treatments.empty}</p>
         ) : (
           <ul className="flex flex-col gap-3 text-sm">
-            {treatments.map((t) => (
-              <li key={t.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
+            {treatments.map((tr) => (
+              <li key={tr.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {t.dentists?.full_name ?? "—"}
-                    {t.services ? ` · ${serviceName(t.services.name_translations)}` : ""}
+                    {tr.dentists?.full_name ?? t.common.dash}
+                    {tr.services ? ` · ${serviceName(tr.services.name_translations, locale)}` : ""}
                   </span>
-                  <span>{formatDateTime(t.treated_at)}</span>
+                  <span>{formatDateTime(tr.treated_at, locale)}</span>
                 </div>
-                <p className="mt-1">{t.description}</p>
+                <p className="mt-1">{tr.description}</p>
                 <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-                  {t.tooth_reference && <span>Tooth: {t.tooth_reference}</span>}
-                  {t.cost != null && (
+                  {tr.tooth_reference && <span>{interpolate(t.patientDetail.treatments.toothPrefix, { tooth: tr.tooth_reference })}</span>}
+                  {tr.cost != null && (
                     <span>
-                      {t.cost} {t.currency}
+                      {tr.cost} {tr.currency}
                     </span>
                   )}
                 </div>
@@ -90,10 +95,10 @@ export function TreatmentsSection({
         )}
 
         <form action={action} className="flex flex-col gap-3 border-t border-border pt-4">
-          <Field label="Dentist">
+          <Field label={t.patientDetail.treatments.dentistLabel}>
             <select name="dentistId" required defaultValue="" className={selectClass}>
               <option value="" disabled>
-                Select a dentist
+                {t.appointments.dialog.selectDentist}
               </option>
               {dentists.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -102,9 +107,9 @@ export function TreatmentsSection({
               ))}
             </select>
           </Field>
-          <Field label="Service (optional)">
+          <Field label={t.patientDetail.treatments.serviceLabel}>
             <select name="serviceId" defaultValue="" className={selectClass}>
-              <option value="">No service</option>
+              <option value="">{t.patientDetail.treatments.noService}</option>
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -113,32 +118,32 @@ export function TreatmentsSection({
             </select>
           </Field>
           {appointments.length > 0 && (
-            <Field label="Linked appointment (optional)">
+            <Field label={t.patientDetail.treatments.appointmentLabel}>
               <select name="appointmentId" defaultValue="" className={selectClass}>
-                <option value="">Not linked</option>
+                <option value="">{t.patientDetail.treatments.notLinked}</option>
                 {appointments.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {formatDateTime(a.start_at)}
+                    {formatDateTime(a.start_at, locale)}
                   </option>
                 ))}
               </select>
             </Field>
           )}
-          <Field label="Description">
+          <Field label={t.patientDetail.treatments.descriptionLabel}>
             <Input name="description" required />
           </Field>
-          <Field label="Tooth reference (optional)">
+          <Field label={t.patientDetail.treatments.toothLabel}>
             <Input name="toothReference" />
           </Field>
-          <Field label="Cost (optional)">
+          <Field label={t.patientDetail.treatments.costLabel}>
             <Input type="number" name="cost" min={0} step="0.01" />
           </Field>
-          <Field label="Treatment date">
+          <Field label={t.patientDetail.treatments.dateLabel}>
             <Input type="datetime-local" name="treatedAt" />
           </Field>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <Button type="submit" disabled={pending} size="sm" className="self-start">
-            {pending ? "Adding..." : "Add treatment"}
+            {pending ? t.patientDetail.treatments.adding : t.patientDetail.treatments.add}
           </Button>
         </form>
       </CardContent>

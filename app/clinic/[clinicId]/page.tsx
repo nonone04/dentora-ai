@@ -1,65 +1,24 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDateTime, serviceName, STATUS_VARIANT } from "@/lib/format";
+import { Suspense } from "react";
+import { FeatureUsageBeacon } from "@/components/telemetry/feature-usage-beacon";
+import { AIActivityFeed, AIActivityFeedSkeleton } from "@/components/dashboard/ai-activity-feed";
+import { AIPerformanceStats, AIPerformanceStatsSkeleton } from "@/components/dashboard/ai-performance-stats";
+import { AppointmentTimeline, AppointmentTimelineSkeleton } from "@/components/dashboard/appointment-timeline";
+import { ClinicStats, ClinicStatsSkeleton } from "@/components/dashboard/clinic-stats";
+import { NotificationCenter, NotificationCenterSkeleton } from "@/components/dashboard/notification-center";
+import { PatientInsights, PatientInsightsSkeleton } from "@/components/dashboard/patient-insights";
+import { QuickActions, QuickActionsSkeleton } from "@/components/dashboard/quick-actions";
+import { SystemHealthPanel, SystemHealthPanelSkeleton } from "@/components/dashboard/system-health-panel";
+import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
+import type { Dictionary } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 
-type TodayAppointmentRow = {
-  id: string;
-  start_at: string;
-  end_at: string;
-  status: string;
-  patients: { full_name: string } | null;
-  dentists: { full_name: string } | null;
-  services: { name_translations: Record<string, string>; price: number | string | null; currency: string } | null;
-};
-
-type RevenueAppointmentRow = {
-  id: string;
-  services: { price: number | string | null; currency: string } | null;
-};
-
-function sumRevenue(rows: { services: { price: number | string | null; currency: string } | null }[]) {
-  let total = 0;
-  let currency = "MAD";
-  for (const row of rows) {
-    const price = row.services?.price;
-    if (price != null) {
-      total += Number(price);
-      currency = row.services?.currency ?? currency;
-    }
-  }
-  return { total, currency };
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RevenueCard({ label, total, currency }: { label: string; total: number; currency: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">
-          {total.toFixed(2)} {currency}
-        </div>
-      </CardContent>
-    </Card>
-  );
+function greeting(now: Date, t: Dictionary) {
+  const hour = now.getHours();
+  if (hour < 12) return t.dashboard.greetingMorning;
+  if (hour < 18) return t.dashboard.greetingAfternoon;
+  return t.dashboard.greetingEvening;
 }
 
 export default async function ClinicOverviewPage({
@@ -69,117 +28,74 @@ export default async function ClinicOverviewPage({
 }) {
   const { clinicId } = await params;
   const user = await requireUser();
-  await requireClinicMembership(clinicId, user.id);
+  const membership = await requireClinicMembership(clinicId, user.id);
 
   const supabase = await createClient();
+  const [{ data: profile }, t, locale] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+    getServerDictionary(),
+    getServerLocale(),
+  ]);
+  const firstName = (profile?.full_name || user.email || "").split(" ")[0];
 
   const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-
-  const [
-    { count: patientCount },
-    { count: dentistCount },
-    { count: serviceCount },
-    { data: todayData },
-    { data: monthData },
-  ] = await Promise.all([
-    supabase
-      .from("patients")
-      .select("*", { count: "exact", head: true })
-      .eq("clinic_id", clinicId),
-    supabase
-      .from("dentists")
-      .select("*", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("is_active", true),
-    supabase
-      .from("services")
-      .select("*", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("is_active", true),
-    supabase
-      .from("appointments")
-      .select(
-        "id, start_at, end_at, status, patients(full_name), dentists(full_name), services(name_translations, price, currency)",
-      )
-      .eq("clinic_id", clinicId)
-      .gte("start_at", todayStart.toISOString())
-      .lt("start_at", todayEnd.toISOString())
-      .order("start_at"),
-    supabase
-      .from("appointments")
-      .select("id, services(price, currency)")
-      .eq("clinic_id", clinicId)
-      .eq("status", "completed")
-      .gte("start_at", monthStart.toISOString())
-      .lt("start_at", monthEnd.toISOString()),
-  ]);
-
-  const todayAppointments = (todayData ?? []) as unknown as TodayAppointmentRow[];
-  const monthAppointments = (monthData ?? []) as unknown as RevenueAppointmentRow[];
-
-  const todayAppointmentCount = todayAppointments.filter((a) => a.status !== "cancelled").length;
-  const todayRevenue = sumRevenue(todayAppointments.filter((a) => a.status === "completed"));
-  const monthRevenue = sumRevenue(monthAppointments);
+  const today = new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-lg font-semibold">Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Today&apos;s appointments and clinic activity.
-        </p>
+    <div className="flex flex-col gap-8">
+      <FeatureUsageBeacon feature="analytics_dashboard" clinicId={clinicId} />
+      <div className="flex animate-in flex-col gap-4 fade-in slide-in-from-bottom-1 duration-500 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {greeting(now, t)}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {today} · {membership.clinicName}
+          </p>
+        </div>
+        <Suspense fallback={<QuickActionsSkeleton />}>
+          <QuickActions clinicId={clinicId} />
+        </Suspense>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Total patients" value={patientCount ?? 0} />
-        <StatCard label="Active dentists" value={dentistCount ?? 0} />
-        <StatCard label="Active services" value={serviceCount ?? 0} />
-        <StatCard label="Today's appointments" value={todayAppointmentCount} />
-      </div>
+      <section aria-label={t.dashboard.overviewSectionLabel} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+        <Suspense fallback={<ClinicStatsSkeleton />}>
+          <ClinicStats clinicId={clinicId} />
+        </Suspense>
+      </section>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <RevenueCard label="Today's revenue" total={todayRevenue.total} currency={todayRevenue.currency} />
-        <RevenueCard label="This month's revenue" total={monthRevenue.total} currency={monthRevenue.currency} />
-      </div>
+      <section aria-label={t.dashboard.aiPerformanceSectionLabel} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+        <Suspense fallback={<AIPerformanceStatsSkeleton />}>
+          <AIPerformanceStats clinicId={clinicId} role={membership.role} />
+        </Suspense>
+      </section>
 
-      <div>
-        <h2 className="text-base font-semibold">Today&apos;s schedule</h2>
-        {todayAppointments.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No appointments scheduled for today.</p>
-        ) : (
-          <Table className="mt-2">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead>Dentist</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {todayAppointments.map((appt) => (
-                <TableRow key={appt.id}>
-                  <TableCell>{appt.patients?.full_name ?? "—"}</TableCell>
-                  <TableCell>{appt.dentists?.full_name ?? "—"}</TableCell>
-                  <TableCell>{serviceName(appt.services?.name_translations)}</TableCell>
-                  <TableCell>{formatDateTime(appt.start_at)}</TableCell>
-                  <TableCell>{formatDateTime(appt.end_at)}</TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[appt.status] ?? "secondary"} className="capitalize">
-                      {appt.status.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+      <div className="grid animate-in grid-cols-1 gap-6 fade-in slide-in-from-bottom-1 duration-500 lg:grid-cols-3">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <Suspense fallback={<AppointmentTimelineSkeleton />}>
+            <AppointmentTimeline clinicId={clinicId} />
+          </Suspense>
+          <Suspense fallback={<AIActivityFeedSkeleton />}>
+            <AIActivityFeed clinicId={clinicId} />
+          </Suspense>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          <Suspense fallback={<SystemHealthPanelSkeleton />}>
+            <SystemHealthPanel clinicId={clinicId} role={membership.role} />
+          </Suspense>
+          <Suspense fallback={<PatientInsightsSkeleton />}>
+            <PatientInsights clinicId={clinicId} role={membership.role} />
+          </Suspense>
+          <Suspense fallback={<NotificationCenterSkeleton />}>
+            <NotificationCenter clinicId={clinicId} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

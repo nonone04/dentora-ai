@@ -1,17 +1,23 @@
 import { getClinicAISettings } from "@/lib/ai/settings";
+import { cancelAppointmentTool } from "@/lib/ai/tools/cancel-appointment";
 import { checkAvailabilityTool } from "@/lib/ai/tools/check-availability";
 import { draftAppointmentTool } from "@/lib/ai/tools/draft-appointment";
 import { escalateToStaffTool } from "@/lib/ai/tools/escalate-to-staff";
 import { getClinicInfoTool } from "@/lib/ai/tools/get-clinic-info";
 import { listServicesTool } from "@/lib/ai/tools/list-services";
+import { rescheduleAppointmentTool } from "@/lib/ai/tools/reschedule-appointment";
+import { searchKnowledgeTool } from "@/lib/ai/tools/search-knowledge";
 import type { AITool, AIToolContext } from "@/lib/ai/tools/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const ALL_TOOLS: AITool[] = [
   getClinicInfoTool,
   listServicesTool,
+  searchKnowledgeTool,
   checkAvailabilityTool,
   draftAppointmentTool,
+  rescheduleAppointmentTool,
+  cancelAppointmentTool,
   escalateToStaffTool,
 ];
 

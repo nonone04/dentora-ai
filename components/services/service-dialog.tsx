@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "@/lib/i18n";
 
 const initialState: ActionFormState = undefined;
 
@@ -54,6 +55,7 @@ export function ServiceDialog({
   const [state, action, pending] = useActionState(boundAction, initialState);
   const [handledState, setHandledState] = useState(state);
   const [open, setOpen] = useState(false);
+  const t = useTranslations();
 
   if (state !== handledState) {
     setHandledState(state);
@@ -69,22 +71,22 @@ export function ServiceDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{service ? "Edit service" : "New service"}</DialogTitle>
+          <DialogTitle>{service ? t.services.dialog.editTitle : t.services.dialog.newTitle}</DialogTitle>
           <DialogDescription>
-            {service ? "Update this service." : "Add a service to this clinic."}
+            {service ? t.services.dialog.editDescription : t.services.dialog.newDescription}
           </DialogDescription>
         </DialogHeader>
         <form action={action} className="flex flex-col gap-3">
-          <Field label="Name (French)">
+          <Field label={t.services.dialog.nameFrLabel}>
             <Input name="nameFr" defaultValue={service?.name_translations.fr} />
           </Field>
-          <Field label="Name (Arabic)">
+          <Field label={t.services.dialog.nameArLabel}>
             <Input name="nameAr" defaultValue={service?.name_translations.ar} dir="rtl" />
           </Field>
-          <Field label="Name (English)">
+          <Field label={t.services.dialog.nameEnLabel}>
             <Input name="nameEn" defaultValue={service?.name_translations.en} />
           </Field>
-          <Field label="Duration (minutes)">
+          <Field label={t.services.dialog.durationLabel}>
             <Input
               type="number"
               name="defaultDurationMinutes"
@@ -94,7 +96,7 @@ export function ServiceDialog({
               required
             />
           </Field>
-          <Field label="Price (optional)">
+          <Field label={`${t.services.dialog.priceLabel} (${t.common.optional})`}>
             <Input
               type="number"
               name="price"
@@ -103,7 +105,7 @@ export function ServiceDialog({
               defaultValue={service?.price ?? ""}
             />
           </Field>
-          <Field label="Currency">
+          <Field label={t.services.dialog.currencyLabel}>
             <Input name="currency" defaultValue={service?.currency ?? "MAD"} />
           </Field>
           {service && (
@@ -114,13 +116,13 @@ export function ServiceDialog({
                 defaultChecked={service.is_active}
                 className="size-4 rounded border-input"
               />
-              Active
+              {t.services.dialog.activeLabel}
             </label>
           )}
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving..." : service ? "Save changes" : "Create service"}
+              {pending ? t.common.saving : service ? t.services.dialog.save : t.services.dialog.create}
             </Button>
           </DialogFooter>
         </form>

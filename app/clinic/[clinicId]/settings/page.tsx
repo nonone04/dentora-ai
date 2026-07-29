@@ -1,42 +1,24 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowRight, UsersRound } from "lucide-react";
 import { AISettingsForm } from "@/components/ai/ai-settings-form";
 import { NotificationSettingsForm } from "@/components/clinic/notification-settings-form";
-import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { WhatsAppWizard } from "@/components/settings/whatsapp-wizard";
+import { FeatureUsageBeacon } from "@/components/telemetry/feature-usage-beacon";
 import { getClinicAISettings } from "@/lib/ai/settings";
 import { formatDateTime } from "@/lib/format";
+import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
-
-type MemberRow = {
-  id: string;
-  role: string;
-  is_active: boolean;
-  profiles: { full_name: string | null; email: string | null } | null;
-};
-
-type AuditLogRow = {
-  id: string;
-  action: string;
-  entity_type: string;
-  created_at: string;
-  profiles: { full_name: string | null; email: string | null } | null;
-};
-
-const AUDIT_ACTION_LABEL: Record<string, string> = {
-  appointment_status_changed: "Appointment status changed",
-  notification_sent: "Notification sent",
-  notification_failed: "Notification failed",
-  member_invited: "Member invited",
-  member_invitation_accepted: "Invitation accepted",
-  appointment_draft_approved: "AI draft approved",
-  appointment_draft_rejected: "AI draft rejected",
-};
 
 type ConversationRow = {
   id: string;
@@ -61,30 +43,18 @@ export default async function SettingsPage({
   }
 
   const supabase = await createClient();
-  const [{ data: membersData }, { data: clinic }, { data: auditLogsData }, { data: conversationsData }] =
-    await Promise.all([
-      supabase
-        .from("clinic_members")
-        .select("id, role, is_active, profiles(full_name, email)")
-        .eq("clinic_id", clinicId)
-        .order("created_at"),
-      supabase.from("clinics").select("settings, slug").eq("id", clinicId).single(),
-      supabase
-        .from("audit_logs")
-        .select("id, action, entity_type, created_at, profiles(full_name, email)")
-        .eq("clinic_id", clinicId)
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("ai_conversations")
-        .select("id, channel, status, started_at, ended_at, patients(full_name)")
-        .eq("clinic_id", clinicId)
-        .order("started_at", { ascending: false })
-        .limit(20),
-    ]);
+  const [{ data: clinic }, { data: conversationsData }, t, locale] = await Promise.all([
+    supabase.from("clinics").select("settings, slug, whatsapp_number, whatsapp_phone_number_id").eq("id", clinicId).single(),
+    supabase
+      .from("ai_conversations")
+      .select("id, channel, status, started_at, ended_at, patients(full_name)")
+      .eq("clinic_id", clinicId)
+      .order("started_at", { ascending: false })
+      .limit(20),
+    getServerDictionary(),
+    getServerLocale(),
+  ]);
 
-  const members = (membersData ?? []) as unknown as MemberRow[];
-  const auditLogs = (auditLogsData ?? []) as unknown as AuditLogRow[];
   const conversations = (conversationsData ?? []) as unknown as ConversationRow[];
   const notificationSettings = getClinicNotificationSettings(clinic?.settings ?? null);
   const aiSettings = getClinicAISettings(clinic?.settings ?? null);
@@ -94,107 +64,90 @@ export default async function SettingsPage({
   const protocol = host?.startsWith("localhost") ? "http" : "https";
   const publicChatUrl = clinic?.slug && host ? `${protocol}://${host}/c/${clinic.slug}` : null;
 
+  const conversationStatusLabel = (status: string) => t.conversationStatus[status as keyof typeof t.conversationStatus] ?? status;
+
   return (
     <div className="flex flex-col gap-6">
+      <FeatureUsageBeacon feature="settings" clinicId={clinicId} />
       <div>
-        <h1 className="text-lg font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Clinic notification preferences and team management.
-        </p>
+        <h1 className="text-lg font-semibold">{t.settings.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t.settings.description}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>{t.settings.appearance.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">{t.settings.appearance.description}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <div className="flex items-center justify-between gap-3 sm:justify-start">
+              <span className="text-sm font-medium">{t.settings.appearance.themeLabel}</span>
+              <ThemeToggle variant="labelled" />
+            </div>
+            <div className="flex items-center justify-between gap-3 sm:justify-start">
+              <span className="text-sm font-medium">{t.settings.appearance.languageLabel}</span>
+              <LanguageSwitcher variant="labelled" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.settings.notifications.title}</CardTitle>
         </CardHeader>
         <CardContent>
           <NotificationSettingsForm
             clinicId={clinicId}
             reminderHoursBefore={notificationSettings.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE}
             sendConfirmations={notificationSettings.sendConfirmations ?? true}
+            channelEmail={notificationSettings.channels?.email ?? true}
+            channelInApp={notificationSettings.channels?.inApp ?? true}
+            categoryAppointmentReminders={notificationSettings.categories?.appointmentReminders ?? true}
+            categorySecurityAlerts={notificationSettings.categories?.securityAlerts ?? true}
+            categoryAiSummaries={notificationSettings.categories?.aiSummaries ?? true}
+            categoryTeamActivity={notificationSettings.categories?.teamActivity ?? true}
           />
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Team</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              People with access to this clinic.
-            </p>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.settings.whatsappWizard.title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <WhatsAppWizard
+            clinicId={clinicId}
+            initialConnected={!!clinic?.whatsapp_phone_number_id}
+            initialDisplayNumber={clinic?.whatsapp_number ?? null}
+            initialPhoneNumberId={clinic?.whatsapp_phone_number_id ?? null}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <UsersRound className="size-4.5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold">{t.staffManagement.title}</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">{t.staffManagement.description}</p>
+            </div>
           </div>
-          <InviteMemberDialog clinicId={clinicId} />
-        </div>
-
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>{member.profiles?.full_name ?? "—"}</TableCell>
-                <TableCell>{member.profiles?.email ?? "—"}</TableCell>
-                <TableCell className="capitalize">{member.role}</TableCell>
-                <TableCell>
-                  <Badge variant={member.is_active ? "secondary" : "outline"}>
-                    {member.is_active ? "Active" : "Pending"}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          <Button size="sm" className="gap-1.5" nativeButton={false} render={<Link href={`/clinic/${clinicId}/staff`} />}>
+            {t.settings.team.manageLink}
+            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-base font-semibold">Activity log</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Recent notable events for this clinic.
-          </p>
-        </div>
-
-        {auditLogs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No activity yet.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>When</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {auditLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>{AUDIT_ACTION_LABEL[log.action] ?? log.action}</TableCell>
-                  <TableCell className="capitalize">{log.entity_type}</TableCell>
-                  <TableCell>{log.profiles?.full_name ?? log.profiles?.email ?? "System"}</TableCell>
-                  <TableCell>{formatDateTime(log.created_at)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-semibold">AI assistant</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Patients can chat with this clinic&apos;s AI assistant once enabled below. These
-            settings control what it&apos;s allowed to do. Appointments it proposes still need
-            staff review in the AI inbox before they&apos;re confirmed.
-          </p>
+          <h2 className="text-base font-semibold">{t.settings.ai.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.settings.ai.description}</p>
         </div>
 
         <Card>
@@ -206,10 +159,8 @@ export default async function SettingsPage({
             />
             {aiSettings.enabled && publicChatUrl && (
               <div className="border-t border-border pt-4">
-                <span className="text-sm font-medium">Public chat link</span>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Share this with patients so they can chat with the assistant.
-                </p>
+                <span className="text-sm font-medium">{t.settings.ai.publicChatLink}</span>
+                <p className="mt-1 text-sm text-muted-foreground">{t.settings.ai.publicChatLinkDescription}</p>
                 <a href={publicChatUrl} className="mt-1 block break-all text-sm text-primary underline">
                   {publicChatUrl}
                 </a>
@@ -219,30 +170,28 @@ export default async function SettingsPage({
         </Card>
 
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Logged conversations</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t.settings.ai.loggedConversations}</h3>
           {conversations.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">None yet.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t.settings.ai.noneYet}</p>
           ) : (
             <Table className="mt-2">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Channel</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Started</TableHead>
+                  <TableHead>{t.settings.ai.patient}</TableHead>
+                  <TableHead>{t.settings.ai.channel}</TableHead>
+                  <TableHead>{t.settings.ai.status}</TableHead>
+                  <TableHead>{t.settings.ai.started}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {conversations.map((conversation) => (
                   <TableRow key={conversation.id}>
-                    <TableCell>{conversation.patients?.full_name ?? "—"}</TableCell>
+                    <TableCell>{conversation.patients?.full_name ?? t.common.dash}</TableCell>
                     <TableCell className="capitalize">{conversation.channel}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {conversation.status}
-                      </Badge>
+                      <Badge variant="secondary">{conversationStatusLabel(conversation.status)}</Badge>
                     </TableCell>
-                    <TableCell>{formatDateTime(conversation.started_at)}</TableCell>
+                    <TableCell>{formatDateTime(conversation.started_at, locale)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -1,12 +1,21 @@
+import { InAppNotificationProvider } from "@/lib/notifications/providers/in-app-provider";
 import { ResendEmailProvider } from "@/lib/notifications/providers/resend-email-provider";
 import { WhatsAppCloudProvider } from "@/lib/notifications/providers/whatsapp-cloud-provider";
 
-export type NotificationChannel = "email" | "sms" | "whatsapp";
+/**
+ * Widened to add "in_app" -- the Notification & Communication Platform
+ * (lib/notifications/engine.ts) delivers staff-facing notifications
+ * in-app in addition to email/sms/whatsapp. Backward compatible: every
+ * existing caller only ever passed/received the original three values.
+ */
+export type NotificationChannel = "email" | "sms" | "whatsapp" | "in_app";
 
 export type NotificationMessage = {
   to: string;
   subject?: string;
   body: string;
+  /** Optional branded HTML (see lib/email/) -- only ever set on email sends carrying a rendered template. Other channels never read this. */
+  html?: string;
 };
 
 export type NotificationResult = { success: true } | { success: false; error: string };
@@ -39,6 +48,8 @@ class LoggingNotificationProvider implements NotificationProvider {
 const providers = new Map<NotificationChannel, NotificationProvider>();
 
 function createProvider(channel: NotificationChannel): NotificationProvider {
+  if (channel === "in_app") return new InAppNotificationProvider();
+
   if (channel === "email" && process.env.RESEND_API_KEY && process.env.NOTIFICATIONS_FROM_EMAIL) {
     return new ResendEmailProvider(process.env.RESEND_API_KEY, process.env.NOTIFICATIONS_FROM_EMAIL);
   }

@@ -1,10 +1,15 @@
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import { UnverifiedEmailBanner } from "@/components/account/unverified-email-banner";
 import { CreateClinicForm } from "@/components/onboarding/create-clinic-form";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { MarketingHeader } from "@/components/marketing/marketing-header";
+import { MarketingHomeContent } from "@/components/marketing/home-content";
 import { AcceptInvitationButton } from "@/components/team/accept-invitation-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getServerDictionary, interpolate } from "@/lib/i18n/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,17 +25,20 @@ export default async function Home() {
   const user = await getUser();
 
   if (!user) {
-    redirect("/login");
+    return (
+      <>
+        <MarketingHeader />
+        <MarketingHomeContent />
+        <MarketingFooter />
+      </>
+    );
   }
 
   const supabase = await createClient();
-  const { data: membership } = await supabase
-    .from("clinic_members")
-    .select("clinic_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: membership }, t] = await Promise.all([
+    supabase.from("clinic_members").select("clinic_id").eq("user_id", user.id).eq("is_active", true).limit(1).maybeSingle(),
+    getServerDictionary(),
+  ]);
 
   if (membership) {
     redirect(`/clinic/${membership.clinic_id}`);
@@ -42,14 +50,12 @@ export default async function Home() {
   return (
     <div className="flex flex-1 items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col gap-4">
+        {!user.email_confirmed_at && user.email && <UnverifiedEmailBanner email={user.email} />}
         {pendingInvitations.map((invitation) => (
           <Card key={invitation.membership_id}>
             <CardHeader>
-              <CardTitle>You&apos;ve been invited</CardTitle>
-              <CardDescription>
-                Join <span className="font-medium text-foreground">{invitation.clinic_name}</span>{" "}
-                as
-              </CardDescription>
+              <CardTitle>{t.onboarding.invitedTitle}</CardTitle>
+              <CardDescription>{interpolate(t.onboarding.invitedJoinAs, { clinicName: invitation.clinic_name })}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <Badge variant="secondary" className="w-fit capitalize">
@@ -62,18 +68,18 @@ export default async function Home() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Create your clinic</CardTitle>
+            <CardTitle>{t.onboarding.createClinicTitle}</CardTitle>
             <CardDescription>
               {pendingInvitations.length > 0
-                ? "Or set up your own clinic instead."
-                : "Your account isn't linked to a clinic yet. Set one up to get started, or ask a clinic owner or admin to add you as a member instead."}
+                ? t.onboarding.createClinicDescriptionWithInvitations
+                : t.onboarding.createClinicDescriptionNoInvitations}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <CreateClinicForm />
             <form action={signOut}>
               <Button type="submit" variant="outline" className="w-full">
-                Sign out
+                {t.header.signOut}
               </Button>
             </form>
           </CardContent>

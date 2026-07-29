@@ -28,6 +28,7 @@ export class ResendEmailProvider implements NotificationProvider {
           to: message.to,
           subject: message.subject ?? "Appointment notification",
           text: message.body,
+          ...(message.html ? { html: message.html } : {}),
         }),
       });
 

@@ -3,9 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AI_ACTIONS, type AIActionName } from "@/lib/ai/actions";
+import { getServerDictionary } from "@/lib/i18n/server";
+import { getServerLocale } from "@/lib/i18n/get-locale";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
+import { identify, track } from "@/lib/telemetry";
 
 export type CreateClinicFormState = { error?: string } | undefined;
 
@@ -27,11 +30,12 @@ export async function createClinic(
   _prevState: CreateClinicFormState,
   formData: FormData,
 ): Promise<CreateClinicFormState> {
-  await requireUser();
+  const user = await requireUser();
 
   const name = formData.get("name");
   if (typeof name !== "string" || !name.trim()) {
-    return { error: "Clinic name is required." };
+    const t = await getServerDictionary();
+    return { error: t.validation.clinicNameRequired };
   }
 
   const supabase = await createClient();
@@ -43,6 +47,10 @@ export async function createClinic(
   if (error) {
     return { error: error.message };
   }
+
+  const locale = await getServerLocale();
+  await track({ name: "Clinic Created", userId: user.id, clinicId });
+  await identify(user.id, { role: "owner", language: locale });
 
   redirect(`/clinic/${clinicId}`);
 }
@@ -56,15 +64,27 @@ export async function updateNotificationSettings(
 ): Promise<UpdateNotificationSettingsFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can update notification settings." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyNotifications };
   }
 
   const reminderHoursBefore = Number(formData.get("reminderHoursBefore"));
   if (!Number.isFinite(reminderHoursBefore) || reminderHoursBefore < 0) {
-    return { error: "Reminder hours must be a non-negative number." };
+    const t = await getServerDictionary();
+    return { error: t.validation.reminderHoursInvalid };
   }
 
   const sendConfirmations = formData.get("sendConfirmations") === "on";
+  const channels = {
+    email: formData.get("channelEmail") === "on",
+    inApp: formData.get("channelInApp") === "on",
+  };
+  const categories = {
+    appointmentReminders: formData.get("categoryAppointmentReminders") === "on",
+    securityAlerts: formData.get("categorySecurityAlerts") === "on",
+    aiSummaries: formData.get("categoryAiSummaries") === "on",
+    teamActivity: formData.get("categoryTeamActivity") === "on",
+  };
 
   const supabase = await createClient();
   const { data: clinic } = await supabase.from("clinics").select("settings").eq("id", clinicId).single();
@@ -75,7 +95,7 @@ export async function updateNotificationSettings(
     .update({
       settings: {
         ...settings,
-        notifications: { reminderHoursBefore, sendConfirmations },
+        notifications: { reminderHoursBefore, sendConfirmations, channels, categories },
       },
     })
     .eq("id", clinicId);
@@ -97,7 +117,8 @@ export async function updateAISettings(
 ): Promise<UpdateAISettingsFormState> {
   const user = await requireManager(clinicId);
   if (!user) {
-    return { error: "Only clinic owners and admins can update AI settings." };
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyAI };
   }
 
   const enabled = formData.get("enabled") === "on";

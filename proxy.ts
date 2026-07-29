@@ -1,11 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { applyRememberMe, REMEMBER_ME_COOKIE } from "@/lib/supabase/cookie-persistence";
 
-const PROTECTED_PREFIXES = ["/clinic"];
+const PROTECTED_PREFIXES = ["/clinic", "/account"];
 const AUTH_ROUTES = ["/login"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  // @supabase/ssr always writes cookies with its own 400-day maxAge (see
+  // lib/supabase/cookie-persistence.ts) -- this is where every request's
+  // token-refresh cookie write gets re-persisted, so Remember Me has to be
+  // enforced here too, not just in lib/supabase/server.ts's setAll.
+  const rememberMe = request.cookies.get(REMEMBER_ME_COOKIE)?.value !== "0";
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +28,7 @@ export async function proxy(request: NextRequest) {
           );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(name, value, applyRememberMe(options, rememberMe)),
           );
         },
       },

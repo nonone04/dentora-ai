@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { updateAISettings, type UpdateAISettingsFormState } from "@/app/actions/clinics";
 import { AI_ACTIONS, type AIActionName } from "@/lib/ai/actions";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/lib/i18n";
 
 const initialState: UpdateAISettingsFormState = undefined;
 
@@ -17,16 +18,17 @@ export function AISettingsForm({
   allowedActions: AIActionName[];
 }) {
   const [state, action, pending] = useActionState(updateAISettings.bind(null, clinicId), initialState);
+  const t = useTranslations();
 
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className="flex items-center gap-2 text-sm font-medium">
         <input type="checkbox" name="enabled" defaultChecked={enabled} className="size-4 rounded border-input" />
-        Enable AI assistant
+        {t.settings.ai.enable}
       </label>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Allowed actions</span>
+        <span className="text-sm font-medium">{t.settings.ai.allowedActions}</span>
         {AI_ACTIONS.map((actionDef) => (
           <label key={actionDef.name} className="flex items-start gap-2 text-sm">
             <input
@@ -45,9 +47,9 @@ export function AISettingsForm({
       </div>
 
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="text-sm text-muted-foreground">Saved.</p>}
+      {state?.success && <p className="text-sm text-muted-foreground">{t.common.saved}</p>}
       <Button type="submit" disabled={pending} size="sm" className="self-start">
-        {pending ? "Saving..." : "Save"}
+        {pending ? t.common.saving : t.common.save}
       </Button>
     </form>
   );

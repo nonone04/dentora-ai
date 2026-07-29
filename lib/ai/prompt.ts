@@ -1,3 +1,10 @@
+import { buildAvailabilitySection } from "@/lib/ai/availability/prompt";
+import type { AvailabilityResult } from "@/lib/ai/availability/types";
+import { buildKnowledgeSection } from "@/lib/ai/knowledge/prompt";
+import type { KnowledgeSearchResult } from "@/lib/ai/knowledge/types";
+import { NLU_ENTITY_FIELDS, type NLUExtraction } from "@/lib/ai/nlu/types";
+import type { PatientProfile } from "@/lib/ai/patient/types";
+
 /**
  * Structured system prompt for the patient-facing assistant. Split into
  * named sections (rather than one inline string) so each concern --
@@ -6,12 +13,31 @@
  * template literal in the orchestrator with no explicit safety or
  * escalation guidance.
  */
-export function buildSystemPrompt({ clinicName }: { clinicName: string }): string {
+export function buildSystemPrompt({
+  clinicName,
+  nlu,
+  availability,
+  patientProfile,
+  knowledge,
+}: {
+  clinicName: string;
+  nlu?: NLUExtraction;
+  availability?: AvailabilityResult | null;
+  patientProfile?: PatientProfile | null;
+  knowledge?: KnowledgeSearchResult | null;
+}): string {
+  const availabilitySection = buildAvailabilitySection(availability ?? null);
+  const knowledgeSection = buildKnowledgeSection(knowledge ?? null);
+
   const sections = [
     identitySection(clinicName),
     groundingSection(),
     safetySection(),
     escalationSection(),
+    ...(nlu ? [understandingSection(nlu)] : []),
+    ...(availabilitySection ? [availabilitySection] : []),
+    ...(knowledgeSection ? [knowledgeSection] : []),
+    ...(patientProfile ? [patientSection(patientProfile)] : []),
     toneSection(),
   ];
 
@@ -51,6 +77,61 @@ function escalationSection(): string {
     "- A tool fails repeatedly or returns something you can't resolve on your own.",
     "If the tool isn't available to you, say plainly that you can't help with that and suggest they contact the clinic directly.",
   ].join("\n");
+}
+
+/**
+ * Surfaces the upstream NLU extraction (lib/ai/nlu) so the model uses it
+ * instead of re-parsing the raw message itself -- purely grounding
+ * context, not a business-rule directive. Routing decisions (whether to
+ * ask a follow-up, escalate, or treat something as an emergency) are
+ * made deterministically by the Decision Engine (lib/ai/decision)
+ * *before* this prompt is ever built -- a turn only reaches the
+ * tool-selection loop at all once the Decision Engine has already ruled
+ * those out, so this section deliberately doesn't repeat them as
+ * instructions.
+ */
+function understandingSection(nlu: NLUExtraction): string {
+  const entityLines = NLU_ENTITY_FIELDS.filter((field) => nlu.entities[field]).map(
+    (field) => `  - ${field}: ${nlu.entities[field]}`,
+  );
+
+  const lines = [
+    "# Structured understanding of the latest message",
+    "An upstream extraction step already parsed the patient's latest message -- use it instead of re-parsing the raw text yourself:",
+    `- Detected intent: ${nlu.intent} (confidence ${nlu.confidence.toFixed(2)})`,
+    `- Language: ${nlu.language} -- reply in this language when possible.`,
+    ...(entityLines.length > 0 ? ["- Entities already captured, don't ask the patient to repeat these:", ...entityLines] : []),
+    "This extraction can be wrong or incomplete -- use your own judgment and the full conversation as the source of truth.",
+  ];
+
+  return lines.join("\n");
+}
+
+/**
+ * Surfaces the Patient Intelligence Engine's profile (lib/ai/patient) --
+ * internal signals derived from this patient's real appointment history,
+ * never something to recite back to them. The reliability label is
+ * phrased as a behavioral cue (confirm clearly) rather than a judgment
+ * the model might be tempted to voice.
+ */
+function patientSection(profile: PatientProfile): string {
+  const { reliability, communication, scheduling } = profile;
+
+  const historyLine =
+    reliability.sampleSize > 0
+      ? `- Appointment history: ${reliability.label.replace("_", " ")} (${reliability.completedCount} completed, ${reliability.noShowCount} no-show, ${reliability.cancelledCount} cancelled).`
+      : "- No appointment history yet.";
+
+  const lines = [
+    "# Patient context",
+    "Internal-only signals from this patient's history -- never repeat these verbatim to the patient, and never let them make your tone judgmental.",
+    historyLine,
+    ...(reliability.label === "poor" ? ["- Confirm appointment details extra clearly given their attendance history."] : []),
+    ...(communication.preferredChannel ? [`- Usually reachable via ${communication.preferredChannel}.`] : []),
+    ...(scheduling.preferredTimeOfDay ? [`- Tends to prefer ${scheduling.preferredTimeOfDay} appointments.`] : []),
+  ];
+
+  return lines.join("\n");
 }
 
 function toneSection(): string {

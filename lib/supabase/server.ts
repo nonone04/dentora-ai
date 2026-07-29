@@ -1,8 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { applyRememberMe, REMEMBER_ME_COOKIE } from "@/lib/supabase/cookie-persistence";
 
-export async function createClient() {
+export async function createClient(options?: { rememberMe?: boolean }) {
   const cookieStore = await cookies();
+  // Default true: unchanged behavior for every existing caller. Only the
+  // signIn action passes rememberMe explicitly, based on the login form.
+  const rememberMe = options?.rememberMe ?? cookieStore.get(REMEMBER_ME_COOKIE)?.value !== "0";
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,8 +18,8 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+            cookiesToSet.forEach(({ name, value, options: cookieOptions }) =>
+              cookieStore.set(name, value, applyRememberMe(cookieOptions, rememberMe)),
             );
           } catch {
             // setAll called from a Server Component; safe to ignore

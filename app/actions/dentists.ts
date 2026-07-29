@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,13 +18,14 @@ export async function createDentist(
   formData: FormData,
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
+  const t = await getServerDictionary();
   if (!user) {
-    return { error: "Only clinic owners and admins can add dentists." };
+    return { error: t.validation.managersOnlyDentists };
   }
 
   const fullName = formData.get("fullName");
   if (typeof fullName !== "string" || !fullName.trim()) {
-    return { error: "Full name is required." };
+    return { error: t.validation.fullNameRequired };
   }
 
   const supabase = await createClient();

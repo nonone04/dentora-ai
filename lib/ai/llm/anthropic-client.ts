@@ -1,4 +1,4 @@
-import type { LLMClient, LLMMessage, LLMResponse, LLMTool, LLMToolCall, LLMUsage } from "@/lib/ai/llm/client";
+import type { LLMClient, LLMMessage, LLMResponse, LLMTool, LLMToolCall, LLMToolChoice, LLMUsage } from "@/lib/ai/llm/client";
 
 const DEFAULT_MODEL = "claude-sonnet-5";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
@@ -61,6 +61,10 @@ function isRetryableStatus(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+function toAnthropicToolChoice(choice: LLMToolChoice): { type: "auto" } | { type: "tool"; name: string } {
+  return choice === "auto" ? { type: "auto" } : { type: "tool", name: choice.name };
+}
+
 /**
  * Real integration against Anthropic's Messages API. Only selected by
  * the factory when ANTHROPIC_API_KEY is configured. Bounded retries
@@ -78,10 +82,12 @@ export class AnthropicLLMClient implements LLMClient {
     systemPrompt,
     messages,
     tools,
+    toolChoice,
   }: {
     systemPrompt: string;
     messages: LLMMessage[];
     tools: LLMTool[];
+    toolChoice?: LLMToolChoice;
   }): Promise<LLMResponse> {
     const body = JSON.stringify({
       model: this.model,
@@ -93,6 +99,7 @@ export class AnthropicLLMClient implements LLMClient {
         description: tool.description,
         input_schema: tool.inputSchema,
       })),
+      ...(toolChoice ? { tool_choice: toAnthropicToolChoice(toolChoice) } : {}),
     });
 
     let lastError: LLMError = new LLMError("Anthropic request failed.", true);

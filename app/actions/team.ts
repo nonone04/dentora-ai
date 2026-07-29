@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireManager, type ClinicRole } from "@/lib/supabase/clinic";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { track } from "@/lib/telemetry";
 
 export type ActionFormState = { error?: string; success?: string } | undefined;
 
@@ -18,18 +20,19 @@ export async function inviteMember(
   formData: FormData,
 ): Promise<ActionFormState> {
   const user = await requireManager(clinicId);
+  const t = await getServerDictionary();
   if (!user) {
-    return { error: "Only clinic owners and admins can invite members." };
+    return { error: t.staffManagement.errors.noPermission };
   }
 
   const email = formData.get("email");
   const role = formData.get("role");
 
   if (typeof email !== "string" || !email.trim()) {
-    return { error: "Email is required." };
+    return { error: t.staffManagement.invite.emailRequired };
   }
   if (typeof role !== "string" || !INVITABLE_ROLES.includes(role as ClinicRole)) {
-    return { error: "Please select a valid role." };
+    return { error: t.staffManagement.invite.roleInvalid };
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -53,7 +56,7 @@ export async function inviteMember(
     );
 
     if (inviteError || !invited.user) {
-      return { error: inviteError?.message ?? "Could not invite this email." };
+      return { error: inviteError?.message ?? t.staffManagement.invite.inviteError };
     }
 
     targetUserId = invited.user.id;
@@ -69,8 +72,8 @@ export async function inviteMember(
   if (existingMembership) {
     return {
       error: existingMembership.is_active
-        ? "This person is already a member of this clinic."
-        : "An invitation is already pending for this person.",
+        ? t.staffManagement.invite.alreadyMember
+        : t.staffManagement.invite.invitationPending,
     };
   }
 
@@ -97,9 +100,11 @@ export async function inviteMember(
     entityId: membership.id,
     metadata: { role },
   });
+  await track({ name: "Staff Invited", userId: user.id, clinicId, properties: { role: role as ClinicRole } });
 
   revalidatePath(`/clinic/${clinicId}/settings`);
-  return { success: "Invitation sent." };
+  revalidatePath(`/clinic/${clinicId}/staff`);
+  return { success: t.staffManagement.invite.success };
 }
 
 export async function acceptInvitation(
@@ -109,13 +114,14 @@ export async function acceptInvitation(
 ): Promise<{ error?: string } | undefined> {
   const user = await requireUser();
   const supabase = await createClient();
+  const t = await getServerDictionary();
 
   const { data: clinicId, error } = await supabase.rpc("accept_clinic_invitation", {
     membership_id: membershipId,
   });
 
   if (error || !clinicId) {
-    return { error: error?.message ?? "Could not accept this invitation." };
+    return { error: error?.message ?? t.staffManagement.invite.acceptError };
   }
 
   await logAuditEvent(supabase, {
