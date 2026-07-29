@@ -25,6 +25,8 @@ export const en = {
     system: "System",
     close: "Close",
     dash: "—",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
   },
   nav: {
     overview: "Overview",
@@ -404,9 +406,35 @@ export const en = {
       started: "Started",
     },
   },
+  auth: {
+    panel: {
+      eyebrow: "AI-Powered Dental Practice Management",
+      headlineStart: "Your clinic's calm, confident",
+      headlineHighlight: "front desk",
+      headlineEnd: "",
+      subheadline: "Everything your dental team needs to manage bookings, patients and communications -- powered by AI.",
+      benefits: [
+        {
+          title: "AI that never sleeps",
+          description: "Patient questions answered instantly, appointments handled automatically.",
+        },
+        {
+          title: "Built on trust",
+          description: "Enterprise-grade security, role-based access, full audit trails.",
+        },
+        {
+          title: "Save time, every day",
+          description: "Reduce no-shows, automate reminders, focus on patients.",
+        },
+      ],
+      liveBadge: "AI front desk active right now",
+      badges: ["GDPR Compliant", "Encrypted Data", "99.9% Uptime"],
+      backToSite: "Back to dentora.ai",
+    },
+  },
   login: {
-    title: "Welcome to Dentora",
-    description: "Sign in to your clinic account",
+    title: "Welcome back 👋",
+    description: "Sign in to continue managing your clinic.",
     signIn: "Sign in",
     signUp: "Sign up",
     signingIn: "Signing in...",
@@ -421,6 +449,10 @@ export const en = {
     invalidCredentials: "Invalid email or password.",
     tooManyAttempts: "Too many attempts. Please try again in a few minutes.",
     resetSuccess: "Your password has been reset. Please sign in.",
+    orContinueWith: "or continue with",
+    continueWithGoogle: "Continue with Google",
+    comingSoon: "Coming soon",
+    termsFooter: "By continuing, you agree to Dentora AI's Terms of Service and Privacy Policy.",
   },
   onboarding: {
     invitedTitle: "You've been invited",

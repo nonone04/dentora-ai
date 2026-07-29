@@ -146,6 +146,39 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/*
+ * Fixed premium-dark surface for the auth pages' glass card (see
+ * components/auth/auth-shell.tsx) -- scoped to a wrapper class rather than
+ * relying on `.dark`, so the card reads the same regardless of the user's
+ * light/dark/system theme choice (matching Linear/Vercel-style auth
+ * screens), while every child (Button, Input, Checkbox, Progress, etc.)
+ * still just uses its normal `bg-background`/`text-muted-foreground`/etc.
+ * classes and picks this up for free through custom-property inheritance.
+ */
+.auth-scope {
+  --background: oklch(0.16 0.03 260);
+  --foreground: oklch(0.97 0.005 260);
+  --card: oklch(0.2 0.035 260);
+  --card-foreground: oklch(0.97 0.005 260);
+  --popover: oklch(0.2 0.035 260);
+  --popover-foreground: oklch(0.97 0.005 260);
+  --primary: oklch(0.55 0.23 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.26 0.03 260);
+  --secondary-foreground: oklch(0.97 0.005 260);
+  --muted: oklch(0.24 0.03 260);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.26 0.03 260);
+  --accent-foreground: oklch(0.97 0.005 260);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 8%);
+  --ring: oklch(0.62 0.19 260);
+  --success: oklch(0.7 0.16 150);
+  --success-foreground: oklch(0.15 0.02 150);
+  color-scheme: dark;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -21,6 +21,8 @@ export const ar = {
     system: "النظام",
     close: "إغلاق",
     dash: "—",
+    showPassword: "إظهار كلمة المرور",
+    hidePassword: "إخفاء كلمة المرور",
   },
   nav: {
     overview: "نظرة عامة",
@@ -399,9 +401,35 @@ export const ar = {
       started: "بدأت",
     },
   },
+  auth: {
+    panel: {
+      eyebrow: "إدارة عيادات الأسنان بالذكاء الاصطناعي",
+      headlineStart: "",
+      headlineHighlight: "استقبال",
+      headlineEnd: " عيادتك الهادئ والواثق",
+      subheadline: "كل ما يحتاجه فريق عيادتك لإدارة الحجوزات والمرضى والتواصل -- مدعوم بالذكاء الاصطناعي.",
+      benefits: [
+        {
+          title: "ذكاء اصطناعي لا ينام أبدًا",
+          description: "يتم الرد على أسئلة المرضى فورًا، وتُدار المواعيد تلقائيًا.",
+        },
+        {
+          title: "مبني على الثقة",
+          description: "أمان بمستوى المؤسسات، صلاحيات وصول حسب الدور، وسجلات تدقيق كاملة.",
+        },
+        {
+          title: "وفّر وقتك كل يوم",
+          description: "قلّل حالات عدم الحضور، وأتمِت التذكيرات، وركّز على المرضى.",
+        },
+      ],
+      liveBadge: "الاستقبال الذكي نشط الآن",
+      badges: ["متوافق مع GDPR", "بيانات مشفّرة", "توفر 99.9%"],
+      backToSite: "العودة إلى dentora.ai",
+    },
+  },
   login: {
-    title: "مرحباً بك في Dentora",
-    description: "سجّل الدخول إلى حساب عيادتك",
+    title: "أهلاً بعودتك 👋",
+    description: "سجّل الدخول لمتابعة إدارة عيادتك.",
     signIn: "تسجيل الدخول",
     signUp: "إنشاء حساب",
     signingIn: "جارٍ تسجيل الدخول...",
@@ -416,6 +444,10 @@ export const ar = {
     invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
     tooManyAttempts: "محاولات كثيرة جدًا. يرجى المحاولة مرة أخرى بعد بضع دقائق.",
     resetSuccess: "تمت إعادة تعيين كلمة المرور. يرجى تسجيل الدخول.",
+    orContinueWith: "أو تابع باستخدام",
+    continueWithGoogle: "المتابعة عبر Google",
+    comingSoon: "قريبًا",
+    termsFooter: "بمتابعتك، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بـ Dentora AI.",
   },
   onboarding: {
     invitedTitle: "لقد تمت دعوتك",

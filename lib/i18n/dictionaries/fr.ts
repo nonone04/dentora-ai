@@ -21,6 +21,8 @@ export const fr = {
     system: "Système",
     close: "Fermer",
     dash: "—",
+    showPassword: "Afficher le mot de passe",
+    hidePassword: "Masquer le mot de passe",
   },
   nav: {
     overview: "Aperçu",
@@ -411,9 +413,36 @@ export const fr = {
       started: "Débutée",
     },
   },
+  auth: {
+    panel: {
+      eyebrow: "Gestion de cabinet dentaire propulsée par l'IA",
+      headlineStart: "",
+      headlineHighlight: "L'accueil",
+      headlineEnd: " serein et confiant de votre clinique",
+      subheadline:
+        "Tout ce dont votre équipe dentaire a besoin pour gérer les rendez-vous, les patients et les communications -- propulsé par l'IA.",
+      benefits: [
+        {
+          title: "Une IA qui ne dort jamais",
+          description: "Les questions des patients trouvent une réponse instantanément, chaque rendez-vous étant traité automatiquement.",
+        },
+        {
+          title: "Bâti sur la confiance",
+          description: "Sécurité de niveau entreprise, accès basé sur les rôles, journaux d'audit complets.",
+        },
+        {
+          title: "Gagnez du temps, chaque jour",
+          description: "Réduisez les rendez-vous manqués, automatisez les rappels, concentrez-vous sur vos patients.",
+        },
+      ],
+      liveBadge: "Accueil IA actif en ce moment",
+      badges: ["Conforme RGPD", "Données chiffrées", "Disponibilité 99,9 %"],
+      backToSite: "Retour à dentora.ai",
+    },
+  },
   login: {
-    title: "Bienvenue sur Dentora",
-    description: "Connectez-vous à votre compte clinique",
+    title: "Bon retour 👋",
+    description: "Connectez-vous pour continuer à gérer votre clinique.",
     signIn: "Se connecter",
     signUp: "S'inscrire",
     signingIn: "Connexion...",
@@ -428,6 +457,10 @@ export const fr = {
     invalidCredentials: "E-mail ou mot de passe invalide.",
     tooManyAttempts: "Trop de tentatives. Veuillez réessayer dans quelques minutes.",
     resetSuccess: "Votre mot de passe a été réinitialisé. Veuillez vous connecter.",
+    orContinueWith: "ou continuer avec",
+    continueWithGoogle: "Continuer avec Google",
+    comingSoon: "Bientôt disponible",
+    termsFooter: "En continuant, vous acceptez les Conditions d'utilisation et la Politique de confidentialité de Dentora AI.",
   },
   onboarding: {
     invitedTitle: "Vous avez été invité(e)",

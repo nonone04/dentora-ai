@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { TriangleAlert } from "lucide-react";
+import { AuthButton } from "@/components/auth/auth-button";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ErrorState } from "@/components/ui/error-state";
 import { getServerDictionary } from "@/lib/i18n/server";
 
 export default async function AuthConfirmErrorPage({
@@ -22,34 +23,34 @@ export default async function AuthConfirmErrorPage({
     : t.authConfirmError.invalidTitle;
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ErrorState
-            title={title}
-            description={t.authConfirmError.invalidDescription}
-            action={
-              <div className="flex flex-col gap-2">
-                {isRecovery ? (
-                  <Button size="sm" nativeButton={false} render={<Link href="/forgot-password" />}>
-                    {t.authConfirmError.requestNewReset}
-                  </Button>
-                ) : (
-                  <Button size="sm" nativeButton={false} render={<Link href="/login" />}>
-                    {t.authConfirmError.resendVerification}
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/login" />}>
-                  {t.authConfirmError.backToLogin}
-                </Button>
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <AuthShell t={t}>
+      <div className="flex flex-col items-center gap-1.5 text-center">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+          <TriangleAlert className="size-6" aria-hidden="true" />
+        </span>
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+        <p className="max-w-xs text-sm text-balance text-muted-foreground">{t.authConfirmError.invalidDescription}</p>
+      </div>
+
+      <div className="mt-7 flex flex-col gap-3">
+        {isRecovery ? (
+          <AuthButton nativeButton={false} render={<Link href="/forgot-password" />}>
+            {t.authConfirmError.requestNewReset}
+          </AuthButton>
+        ) : (
+          <AuthButton nativeButton={false} render={<Link href="/login" />}>
+            {t.authConfirmError.resendVerification}
+          </AuthButton>
+        )}
+        <Button
+          variant="outline"
+          className="h-11 w-full rounded-xl border-white/10 bg-white/5 text-[15px] font-semibold text-white hover:bg-white/10"
+          nativeButton={false}
+          render={<Link href="/login" />}
+        >
+          {t.authConfirmError.backToLogin}
+        </Button>
+      </div>
+    </AuthShell>
   );
 }
