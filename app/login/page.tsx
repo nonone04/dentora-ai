@@ -79,6 +79,7 @@ function SignInForm() {
   const t = useTranslations();
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("resetSuccess") === "1";
+  const oauthError = searchParams.get("error") === "oauth";
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -98,6 +99,7 @@ function SignInForm() {
         </Link>
       </div>
       {resetSuccess && <FormNotice>{t.login.resetSuccess}</FormNotice>}
+      {oauthError && <FormError>{t.login.oauthError}</FormError>}
       {state?.error && <FormError>{state.error}</FormError>}
       <AuthButton type="submit" disabled={pending} className="mt-1">
         {pending ? t.login.signingIn : t.login.signIn}

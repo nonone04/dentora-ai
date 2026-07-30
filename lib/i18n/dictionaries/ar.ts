@@ -446,7 +446,8 @@ export const ar = {
     resetSuccess: "تمت إعادة تعيين كلمة المرور. يرجى تسجيل الدخول.",
     orContinueWith: "أو تابع باستخدام",
     continueWithGoogle: "المتابعة عبر Google",
-    comingSoon: "قريبًا",
+    redirectingToGoogle: "جارٍ التحويل إلى Google...",
+    oauthError: "حدث خطأ أثناء تسجيل الدخول عبر Google. يرجى المحاولة مرة أخرى.",
     termsFooter: "بمتابعتك، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بـ Dentora AI.",
   },
   onboarding: {

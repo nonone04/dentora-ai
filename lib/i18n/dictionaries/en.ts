@@ -451,7 +451,8 @@ export const en = {
     resetSuccess: "Your password has been reset. Please sign in.",
     orContinueWith: "or continue with",
     continueWithGoogle: "Continue with Google",
-    comingSoon: "Coming soon",
+    redirectingToGoogle: "Redirecting to Google...",
+    oauthError: "Something went wrong signing in with Google. Please try again.",
     termsFooter: "By continuing, you agree to Dentora AI's Terms of Service and Privacy Policy.",
   },
   onboarding: {

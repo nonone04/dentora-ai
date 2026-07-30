@@ -459,7 +459,8 @@ export const fr = {
     resetSuccess: "Votre mot de passe a été réinitialisé. Veuillez vous connecter.",
     orContinueWith: "ou continuer avec",
     continueWithGoogle: "Continuer avec Google",
-    comingSoon: "Bientôt disponible",
+    redirectingToGoogle: "Redirection vers Google...",
+    oauthError: "Une erreur s'est produite lors de la connexion avec Google. Veuillez réessayer.",
     termsFooter: "En continuant, vous acceptez les Conditions d'utilisation et la Politique de confidentialité de Dentora AI.",
   },
   onboarding: {

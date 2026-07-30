@@ -1,14 +1,12 @@
 "use client";
 
+import { useFormStatus } from "react-dom";
+import { Loader2 } from "lucide-react";
+import { signInWithGoogle } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n";
 
-/**
- * "or continue with" divider + Google sign-in button + terms footer, shown
- * below the sign-in/sign-up tabs. There's no Google OAuth provider wired up
- * in the backend yet, so the button is rendered disabled with a "coming
- * soon" tag rather than pretending to work.
- */
+/** "or continue with" divider + Google sign-in button, shown below the sign-in/sign-up tabs. */
 export function SocialAuth() {
   const t = useTranslations();
 
@@ -20,21 +18,32 @@ export function SocialAuth() {
         <span className="h-px flex-1 bg-white/10" />
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        disabled
-        className="h-11 w-full gap-2 rounded-xl border-white/10 bg-white/5 text-[15px] font-medium text-white/70 hover:bg-white/5"
-      >
-        <GoogleIcon className="size-4" aria-hidden="true" />
-        {t.login.continueWithGoogle}
-        <span className="ms-auto rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/50">
-          {t.login.comingSoon}
-        </span>
-      </Button>
+      <form action={signInWithGoogle}>
+        <GoogleButton label={t.login.continueWithGoogle} redirectingLabel={t.login.redirectingToGoogle} />
+      </form>
 
       <p className="text-center text-xs leading-relaxed text-white/40">{t.login.termsFooter}</p>
     </div>
+  );
+}
+
+function GoogleButton({ label, redirectingLabel }: { label: string; redirectingLabel: string }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button
+      type="submit"
+      variant="outline"
+      disabled={pending}
+      className="h-11 w-full gap-2 rounded-xl border-white/10 bg-white/5 text-[15px] font-medium text-white/70 hover:bg-white/10 hover:text-white"
+    >
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <GoogleIcon className="size-4" aria-hidden="true" />
+      )}
+      {pending ? redirectingLabel : label}
+    </Button>
   );
 }
 
