@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
-import { signOut } from "@/app/actions/auth";
-import { UnverifiedEmailBanner } from "@/components/account/unverified-email-banner";
-import { CreateClinicForm } from "@/components/onboarding/create-clinic-form";
+import { CreateClinicScreen } from "@/components/onboarding/create-clinic-screen";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingHomeContent } from "@/components/marketing/home-content";
-import { AcceptInvitationButton } from "@/components/team/accept-invitation-button";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getServerDictionary, interpolate } from "@/lib/i18n/server";
+import { getServerDictionary } from "@/lib/i18n/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,43 +42,10 @@ export default async function Home() {
   const pendingInvitations = (pendingData ?? []) as PendingInvitation[];
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <div className="flex w-full max-w-sm flex-col gap-4">
-        {!user.email_confirmed_at && user.email && <UnverifiedEmailBanner email={user.email} />}
-        {pendingInvitations.map((invitation) => (
-          <Card key={invitation.membership_id}>
-            <CardHeader>
-              <CardTitle>{t.onboarding.invitedTitle}</CardTitle>
-              <CardDescription>{interpolate(t.onboarding.invitedJoinAs, { clinicName: invitation.clinic_name })}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Badge variant="secondary" className="w-fit capitalize">
-                {invitation.role}
-              </Badge>
-              <AcceptInvitationButton membershipId={invitation.membership_id} />
-            </CardContent>
-          </Card>
-        ))}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.onboarding.createClinicTitle}</CardTitle>
-            <CardDescription>
-              {pendingInvitations.length > 0
-                ? t.onboarding.createClinicDescriptionWithInvitations
-                : t.onboarding.createClinicDescriptionNoInvitations}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <CreateClinicForm />
-            <form action={signOut}>
-              <Button type="submit" variant="outline" className="w-full">
-                {t.header.signOut}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <CreateClinicScreen
+      t={t}
+      pendingInvitations={pendingInvitations}
+      unverifiedEmail={!user.email_confirmed_at ? user.email : null}
+    />
   );
 }

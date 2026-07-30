@@ -26,26 +26,85 @@ function slugify(name: string) {
   return `${base || "clinic"}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+const LOGO_MAX_BYTES = 3 * 1024 * 1024;
+const LOGO_MIME_EXTENSIONS: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+};
+
+function stringField(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export async function createClinic(
   _prevState: CreateClinicFormState,
   formData: FormData,
 ): Promise<CreateClinicFormState> {
   const user = await requireUser();
+  const t = await getServerDictionary();
 
-  const name = formData.get("name");
-  if (typeof name !== "string" || !name.trim()) {
-    const t = await getServerDictionary();
+  const name = stringField(formData, "name");
+  if (!name) {
     return { error: t.validation.clinicNameRequired };
+  }
+
+  const logo = formData.get("logo");
+  const hasLogo = logo instanceof File && logo.size > 0;
+  if (hasLogo) {
+    const file = logo as File;
+    if (file.size > LOGO_MAX_BYTES) {
+      return { error: t.validation.clinicLogoTooLarge };
+    }
+    if (!(file.type in LOGO_MIME_EXTENSIONS)) {
+      return { error: t.validation.clinicLogoInvalidType };
+    }
   }
 
   const supabase = await createClient();
   const { data: clinicId, error } = await supabase.rpc("create_clinic_with_owner", {
-    clinic_name: name.trim(),
+    clinic_name: name,
     clinic_slug: slugify(name),
   });
 
   if (error) {
     return { error: error.message };
+  }
+
+  let logoUrl: string | undefined;
+  if (hasLogo) {
+    const file = logo as File;
+    const extension = LOGO_MIME_EXTENSIONS[file.type];
+    const path = `${user.id}/logo-${Date.now()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("clinic-logos")
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if (!uploadError) {
+      logoUrl = supabase.storage.from("clinic-logos").getPublicUrl(path).data.publicUrl;
+    }
+  }
+
+  const profileUpdate = {
+    clinic_type: stringField(formData, "clinicType") || null,
+    address: stringField(formData, "address") || null,
+    phone: stringField(formData, "phone") || null,
+    email: stringField(formData, "email") || null,
+    website: stringField(formData, "website") || null,
+    timezone: stringField(formData, "timezone") || undefined,
+    description: stringField(formData, "description") || null,
+    logo_url: logoUrl,
+  };
+
+  const { error: updateError } = await supabase
+    .from("clinics")
+    .update(profileUpdate)
+    .eq("id", clinicId);
+
+  if (updateError) {
+    return { error: updateError.message };
   }
 
   const locale = await getServerLocale();
