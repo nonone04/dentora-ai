@@ -116,6 +116,20 @@ describe("signIn: success", () => {
     ).rejects.toThrow("REDIRECT:/verify-email?email=unverified%40example.com");
     expect(recordLoginFailureMock).not.toHaveBeenCalled();
   });
+
+  it("resumes a pending checkout via the `next` field instead of the dashboard", async () => {
+    signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    await expect(
+      signIn(undefined, formData({ email: "user@example.com", password: "correct", next: "/checkout/standard" })),
+    ).rejects.toThrow("REDIRECT:/checkout/standard");
+  });
+
+  it("ignores an off-site `next` value and falls back to the dashboard", async () => {
+    signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    await expect(
+      signIn(undefined, formData({ email: "user@example.com", password: "correct", next: "https://evil.example/phish" })),
+    ).rejects.toThrow("REDIRECT:/");
+  });
 });
 
 describe("signUp", () => {
@@ -127,11 +141,37 @@ describe("signUp", () => {
       expect.objectContaining({
         email: "new@example.com",
         options: expect.objectContaining({
-          emailRedirectTo: "https://dentora.test/auth/confirm?type=signup&next=/",
+          emailRedirectTo: "https://dentora.test/auth/confirm?type=signup&next=%2F",
         }),
       }),
     );
     expect(trackMock).toHaveBeenCalledWith(expect.objectContaining({ name: "User Registered", userId: "user-1" }));
+  });
+
+  it("carries a pending checkout's `next` field through the confirm-email link", async () => {
+    signUpMock.mockResolvedValue({ data: { session: null, user: { id: "user-1" } }, error: null });
+    await signUp(
+      undefined,
+      formData({ email: "new@example.com", password: "Str0ngP@ssword123", fullName: "New User", next: "/checkout/professional" }),
+    );
+
+    expect(signUpMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: "https://dentora.test/auth/confirm?type=signup&next=%2Fcheckout%2Fprofessional",
+        }),
+      }),
+    );
+  });
+
+  it("resumes a pending checkout immediately when signup returns a session", async () => {
+    signUpMock.mockResolvedValue({ data: { session: { access_token: "t" }, user: { id: "user-1" } }, error: null });
+    await expect(
+      signUp(
+        undefined,
+        formData({ email: "new@example.com", password: "Str0ngP@ssword123", fullName: "New User", next: "/checkout/standard" }),
+      ),
+    ).rejects.toThrow("REDIRECT:/checkout/standard");
   });
 
   it("rejects a weak password before ever calling signUp", async () => {

@@ -42,12 +42,19 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ctaGlowClass, ctaHoverClass, cardHoverClass } from "@/components/marketing/motion/interactive-classes";
 import { FinalCtaSection } from "@/components/marketing/sections/final-cta-section";
+import { PlanCheckoutButton } from "@/components/marketing/plan-checkout-button";
 import { Reveal } from "@/components/marketing/motion/reveal";
 import { SectionBackground } from "@/components/marketing/motion/section-background";
 import { useTranslations } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import type { CheckoutPlan } from "@/lib/stripe/checkout";
 
 type BillingPeriod = "monthly" | "yearly";
+
+// Plans render in a fixed order (Starter, Professional, Enterprise) from the
+// i18n dictionary; only the first two map to a real Stripe price -- Enterprise
+// stays a plain link since it's sales-assisted, not self-serve checkout.
+const CHECKOUT_PLANS: (CheckoutPlan | undefined)[] = ["standard", "professional", undefined];
 
 const FEATURE_ICONS: LucideIcon[][] = [
   [MessagesSquare, CalendarCheck2, Users, UserCheck, MapPin, FileText, BarChart3, Mail, Lock, BadgeCheck],
@@ -276,9 +283,8 @@ export function PricingContent() {
                       </div>
                     )}
 
-                    <Link
-                      href="/login"
-                      className={cn(
+                    {(() => {
+                      const ctaClassName = cn(
                         "mt-8 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold",
                         isPopular
                           ? cn("bg-gradient-to-r from-blue-600 to-teal-500 text-white", ctaGlowClass)
@@ -286,10 +292,19 @@ export function PricingContent() {
                               "border border-slate-200 text-slate-700 dark:border-white/15 dark:text-slate-100 dark:hover:bg-white/10",
                               ctaHoverClass,
                             ),
-                      )}
-                    >
-                      {plan.cta}
-                    </Link>
+                      );
+                      const checkoutPlan = CHECKOUT_PLANS[index];
+
+                      return checkoutPlan ? (
+                        <PlanCheckoutButton plan={checkoutPlan} className={cn(ctaClassName, "w-full")}>
+                          {plan.cta}
+                        </PlanCheckoutButton>
+                      ) : (
+                        <Link href="/login" className={ctaClassName}>
+                          {plan.cta}
+                        </Link>
+                      );
+                    })()}
                   </div>
                 </Reveal>
               );

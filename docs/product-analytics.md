@@ -66,7 +66,8 @@ counts, and booleans -- never free text (see Privacy).
 | AI | `AI Conversation Started` | `lib/ai/orchestrator.ts`, on the first turn of a new `ai_conversations` row |
 | AI | `AI Conversation Completed` | `lib/ai/orchestrator.ts`, once per resolved turn (see "Known approximations") |
 | AI | `AI Suggestion Accepted` / `AI Suggestion Dismissed` | `app/actions/appointment-drafts.ts` `approveDraft` / `rejectDraft` |
-| Business | `Trial Started` / `Trial Ended` / `Subscription Activated` / `Subscription Cancelled` | **not wired** -- no trial/billing system exists yet |
+| Business | `Checkout Started` (`plan: "standard" \| "professional"`) | `app/actions/billing.ts` `createCheckoutSession`, right before redirecting to Stripe Checkout |
+| Business | `Trial Started` / `Trial Ended` / `Subscription Activated` / `Subscription Cancelled` | **not wired** -- fires once webhook-driven subscription sync exists (see `app/actions/billing.ts`'s doc comment) |
 | Feature usage | `Feature Used` (`feature: FeatureName`) | `components/telemetry/feature-usage-beacon.tsx`, dropped into calendar, patient profile, clinic dashboard, staff management, account security, settings, and AI inbox pages |
 
 ### User properties (`identify`)
@@ -97,10 +98,16 @@ is no trial system to start.
   `conversationId` downstream can reconstruct thread-level completion once
   that's needed; this sprint reports per-turn completion instead of adding
   new product logic to invent a close event.
+- **Checkout Started** fires when a Stripe Checkout session is created, not
+  when payment actually succeeds -- there is no webhook handler yet to
+  confirm the session completed, so a user who abandons Stripe Checkout
+  still shows up as "started."
 - **Trial Started / Trial Ended / Subscription Activated / Subscription
-  Cancelled** are typed and ready but not fired anywhere -- there is no
-  trial or billing system in the codebase today. The internal dashboard's
-  trial-conversion metric reports `insufficient_data` until they exist.
+  Cancelled** are typed and ready but not fired anywhere -- they need a
+  Stripe webhook handler (out of scope for the initial checkout flow in
+  `app/actions/billing.ts`) to know a subscription actually became active.
+  The internal dashboard's trial-conversion metric reports
+  `insufficient_data` until they exist.
 - **Patient Updated** has no trigger -- there is currently no
   `updatePatient` server action.
 

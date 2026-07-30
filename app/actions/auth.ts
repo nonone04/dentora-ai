@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { isAccountLocked, recordLoginFailure } from "@/lib/auth/login-lockout";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
+import { getSafeNextPath } from "@/lib/auth/safe-redirect";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { validatePassword } from "@/lib/auth/password";
 import { track } from "@/lib/telemetry";
@@ -46,6 +47,7 @@ export async function signIn(
   const email = formData.get("email");
   const password = formData.get("password");
   const rememberMe = formData.get("rememberMe") === "on";
+  const next = getSafeNextPath(formData.get("next"));
 
   if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return { error: t.validation.emailAndPasswordRequired };
@@ -81,7 +83,8 @@ export async function signIn(
     if (error.code === "email_not_confirmed") {
       // Only reachable once credentials have already been verified correct
       // by GoTrue, so surfacing this specific state isn't an information leak.
-      redirect(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+      const suffix = next ? `&next=${encodeURIComponent(next)}` : "";
+      redirect(`/verify-email?email=${encodeURIComponent(normalizedEmail)}${suffix}`);
     }
 
     recordLoginFailure(accountKey, ACCOUNT_LOCKOUT_WINDOW_MS);
@@ -111,7 +114,7 @@ export async function signIn(
   });
   await track({ name: "Login", userId: data.user.id });
 
-  redirect("/");
+  redirect(next ?? "/");
 }
 
 export async function signUp(
@@ -122,6 +125,7 @@ export async function signUp(
   const fullName = formData.get("fullName");
   const email = formData.get("email");
   const password = formData.get("password");
+  const next = getSafeNextPath(formData.get("next"));
 
   if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return { error: t.validation.emailAndPasswordRequired };
@@ -142,7 +146,7 @@ export async function signUp(
       data: {
         full_name: typeof fullName === "string" && fullName ? fullName : null,
       },
-      emailRedirectTo: `${origin}/auth/confirm?type=signup&next=/`,
+      emailRedirectTo: `${origin}/auth/confirm?type=signup&next=${encodeURIComponent(next ?? "/")}`,
     },
   });
 
@@ -162,21 +166,23 @@ export async function signUp(
     return { message: t.login.checkEmail };
   }
 
-  redirect("/");
+  redirect(next ?? "/");
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
+  const next = getSafeNextPath(formData.get("next"));
   const origin = await getOrigin();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next ?? "/")}`,
     },
   });
 
   if (error || !data.url) {
-    redirect("/login?error=oauth");
+    const suffix = next ? `&next=${encodeURIComponent(next)}` : "";
+    redirect(`/login?error=oauth${suffix}`);
   }
 
   redirect(data.url);

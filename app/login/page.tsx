@@ -26,6 +26,25 @@ export default function LoginPage() {
         <p className="text-sm text-white/50">{t.login.description}</p>
       </div>
 
+      {/* One Suspense boundary around everything that needs `next` (both
+          forms + the Google button), read once via useSearchParams in
+          LoginPageBody -- see app/actions/billing.ts and
+          app/checkout/[plan]/page.tsx for why a pending checkout needs to
+          survive this page instead of always landing on the dashboard. */}
+      <Suspense>
+        <LoginPageBody />
+      </Suspense>
+    </AuthShell>
+  );
+}
+
+function LoginPageBody() {
+  const t = useTranslations();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
+
+  return (
+    <>
       <Tabs defaultValue="signin" className="mt-7">
         <TabsList variant="line" className="mb-6 h-9 w-full justify-start gap-6 border-b border-white/10 bg-transparent p-0">
           <TabsTrigger
@@ -42,17 +61,15 @@ export default function LoginPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="signin">
-          <Suspense>
-            <SignInForm />
-          </Suspense>
+          <SignInForm next={next} />
         </TabsContent>
         <TabsContent value="signup">
-          <SignUpForm />
+          <SignUpForm next={next} />
         </TabsContent>
       </Tabs>
 
-      <SocialAuth />
-    </AuthShell>
+      <SocialAuth next={next} />
+    </>
   );
 }
 
@@ -74,7 +91,7 @@ function FormNotice({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SignInForm() {
+function SignInForm({ next }: { next: string | null }) {
   const [state, action, pending] = useActionState(signIn, initialState);
   const t = useTranslations();
   const searchParams = useSearchParams();
@@ -83,6 +100,7 @@ function SignInForm() {
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      {next && <input type="hidden" name="next" value={next} />}
       <AuthField label={t.login.email} name="email" type="email" icon={Mail} autoComplete="email" required />
       <PasswordField label={t.login.password} name="password" autoComplete="current-password" required />
       <div className="flex items-center justify-between gap-2">
@@ -113,12 +131,13 @@ function SignInForm() {
   );
 }
 
-function SignUpForm() {
+function SignUpForm({ next }: { next: string | null }) {
   const [state, action, pending] = useActionState(signUp, initialState);
   const t = useTranslations();
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      {next && <input type="hidden" name="next" value={next} />}
       <AuthField label={t.login.fullName} name="fullName" type="text" icon={User} autoComplete="name" required />
       <AuthField label={t.login.email} name="email" type="email" icon={Mail} autoComplete="email" required />
       <PasswordField label={t.login.password} name="password" autoComplete="new-password" required minLength={8} />

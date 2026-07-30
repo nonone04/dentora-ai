@@ -1566,6 +1566,14 @@ export const fr = {
       signUp: "Créer votre propre clinique",
     },
   },
+  billing: {
+    checkoutError: "Une erreur est survenue au démarrage du paiement. Veuillez réessayer.",
+    success: {
+      title: "Vous êtes prêt",
+      description: "Votre abonnement est en cours de configuration. La synchronisation peut prendre quelques secondes.",
+      cta: "Continuer vers Dentora",
+    },
+  },
   forgotPassword: {
     title: "Mot de passe oublié ?",
     description: "Saisissez votre e-mail et nous vous enverrons un lien de réinitialisation.",

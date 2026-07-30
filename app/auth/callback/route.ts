@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSafeNextPath } from "@/lib/auth/safe-redirect";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { createClient } from "@/lib/supabase/server";
 import { track } from "@/lib/telemetry";
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const oauthError = searchParams.get("error");
-  const next = searchParams.get("next") ?? "/";
+  const next = getSafeNextPath(searchParams.get("next")) ?? "/";
 
   if (code && !oauthError) {
     const supabase = await createClient();
@@ -34,5 +35,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=oauth`);
+  const suffix = next !== "/" ? `&next=${encodeURIComponent(next)}` : "";
+  return NextResponse.redirect(`${origin}/login?error=oauth${suffix}`);
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n";
 
 /** "or continue with" divider + Google sign-in button, shown below the sign-in/sign-up tabs. */
-export function SocialAuth() {
+export function SocialAuth({ next }: { next?: string | null }) {
   const t = useTranslations();
 
   return (
@@ -19,6 +19,7 @@ export function SocialAuth() {
       </div>
 
       <form action={signInWithGoogle}>
+        {next && <input type="hidden" name="next" value={next} />}
         <GoogleButton label={t.login.continueWithGoogle} redirectingLabel={t.login.redirectingToGoogle} />
       </form>
 

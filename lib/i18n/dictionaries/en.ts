@@ -1551,6 +1551,14 @@ export const en = {
       signUp: "Create your own clinic",
     },
   },
+  billing: {
+    checkoutError: "Something went wrong starting checkout. Please try again.",
+    success: {
+      title: "You're all set",
+      description: "Your subscription is being set up. This can take a few seconds to finish syncing.",
+      cta: "Continue to Dentora",
+    },
+  },
   onboardingTour: {
     title: "Product tour",
     skip: "Skip",
