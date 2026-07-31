@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { getServerLocale } from "@/lib/i18n/server";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
@@ -14,6 +14,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Loaded unconditionally (locale can change client-side without a full
+// reload) but only ever applied via app/globals.css's `html[dir="rtl"]`
+// override, so Latin-locale visitors never pay for it beyond the
+// self-hosted font file being present in the bundle.
+const notoSansArabic = Noto_Sans_Arabic({
+  variable: "--font-arabic-sans",
+  weight: "variable",
+  subsets: ["arabic"],
 });
 
 export const metadata: Metadata = {
@@ -32,7 +42,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={directionForLocale(locale)}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

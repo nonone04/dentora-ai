@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Activity, Lock, ShieldCheck, Sparkles, Stethoscope, Zap } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ParticleNetwork } from "@/components/auth/particle-network";
+import { Logo } from "@/components/marketing/logo";
 import { Reveal } from "@/components/marketing/motion/reveal";
 import { SectionBackground } from "@/components/marketing/motion/section-background";
 import type { Dictionary } from "@/lib/i18n";
@@ -26,7 +26,7 @@ const BADGE_ICONS = [ShieldCheck, Lock, Activity] as const;
  * own, so it stays usable from either.
  */
 export function AuthShell({ t, children }: { t: Dictionary; children: React.ReactNode }) {
-  const testimonial = t.marketing.home.testimonials.items[0];
+  const testimonial = t.marketing.home.testimonials.caseStudy;
   const initials = testimonial.name
     .split(" ")
     .map((part) => part[0])
@@ -51,12 +51,7 @@ export function AuthShell({ t, children }: { t: Dictionary; children: React.Reac
 
         <div className="relative flex flex-1 flex-col justify-between p-10 xl:p-14">
           <Reveal variant="left">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm">
-                <Stethoscope className="size-5" aria-hidden="true" />
-              </span>
-              <span className="text-lg font-semibold tracking-tight text-white">Dentora AI</span>
-            </Link>
+            <Logo size="lg" variant="glass" />
           </Reveal>
 
           <div className="flex flex-col gap-10 py-12">
@@ -153,12 +148,7 @@ export function AuthShell({ t, children }: { t: Dictionary; children: React.Reac
         />
 
         <div className="relative flex items-center justify-between p-4 sm:p-6 lg:justify-end lg:px-10 lg:py-8">
-          <Link href="/" className="flex items-center gap-2 lg:hidden">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#2563EB_0%,#4F46E5_100%)] text-white">
-              <Stethoscope className="size-4" aria-hidden="true" />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight text-white">Dentora AI</span>
-          </Link>
+          <Logo size="sm" variant="glass" className="lg:hidden" />
           <div className="flex items-center gap-1.5">
             <LanguageSwitcher />
             <ThemeToggle />

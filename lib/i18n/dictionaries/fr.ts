@@ -1279,7 +1279,12 @@ export const fr = {
         "Dentora AI gère les réservations, les rappels et les messages des patients en continu, pour que votre équipe se concentre sur les soins plutôt que sur le téléphone.",
       ctaPrimary: "Commencer gratuitement",
       ctaSecondary: "Essayer la démo interactive",
-      trustLine: "Sécurité de niveau entreprise",
+      trustChips: {
+        encryption: "Chiffrées en transit et au repos",
+        rbac: "Contrôle d'accès basé sur les rôles",
+        auditLogs: "Journaux d'audit complets",
+        gdpr: "Conforme RGPD",
+      },
       noCreditCard: "Aucune carte bancaire requise",
       heroScreenshotAlt: "Tableau de bord de la clinique Dentora AI montrant les rendez-vous du jour, les patients et l'activité de la clinique",
       floatingCardAppointments: "6 rendez-vous aujourd'hui",
@@ -1311,6 +1316,7 @@ export const fr = {
           alt: "Widget de chat patient Dentora AI répondant instantanément à une question sur le prix et la durée d'un blanchiment dentaire",
           badgeValue: "Toujours actif",
           badgeLabel: "Questions des patients traitées 24h/24",
+          secondaryCta: "Voir l'accueil par IA en action",
         },
         calendar: {
           eyebrow: "Calendrier intelligent",
@@ -1326,6 +1332,7 @@ export const fr = {
           alt: "Vue hebdomadaire du calendrier Dentora AI avec des rendez-vous codés par couleur pour quatre dentistes",
           badgeValue: "Sans conflit",
           badgeLabel: "Vérifié par rapport aux vrais plannings",
+          secondaryCta: "Explorer le planificateur",
         },
         patient360: {
           eyebrow: "Vue patient à 360°",
@@ -1341,6 +1348,7 @@ export const fr = {
           alt: "Page de profil patient à 360° de Dentora AI montrant les informations médicales, le score de fiabilité et la chronologie",
           badgeValue: "92% fiable",
           badgeLabel: "Score de fiabilité du patient",
+          secondaryCta: "Voir un exemple de profil patient",
         },
         analytics: {
           eyebrow: "Tableau de bord analytique",
@@ -1356,6 +1364,7 @@ export const fr = {
           alt: "Tableau de bord Dentora AI montrant le total des patients, les dentistes actifs, les rendez-vous du jour et le chiffre d'affaires mensuel",
           badgeValue: "19 700 MAD",
           badgeLabel: "Chiffre d'affaires de ce mois",
+          secondaryCta: "Voir le tableau de bord en direct",
         },
         staff: {
           eyebrow: "Gestion de l'équipe",
@@ -1371,6 +1380,7 @@ export const fr = {
           alt: "Page de gestion des équipes Dentora AI montrant les membres, les rôles et le statut d'accès",
           badgeValue: "Basé sur les rôles",
           badgeLabel: "Propriétaire, admin, dentiste, réceptionniste",
+          secondaryCta: "Voir l'équipe et les rôles dans la démo",
         },
         security: {
           eyebrow: "Sécurité et permissions",
@@ -1386,6 +1396,7 @@ export const fr = {
           alt: "Page de l'équipe Dentora AI montrant une clé API masquée et une entrée de journal d'audit indiquant qui l'a créée et quand",
           badgeValue: "Entièrement audité",
           badgeLabel: "Chaque action sensible est enregistrée",
+          secondaryCta: "Découvrir comment fonctionne la sécurité",
         },
       },
       howItWorks: {
@@ -1404,27 +1415,19 @@ export const fr = {
         ],
       },
       testimonials: {
+        eyebrow: "Témoignage client",
         title: "La confiance des cliniques qui prennent soin de leurs patients",
-        items: [
-          {
-            quote:
-              "Notre accueil, c'était trois personnes au téléphone toute la journée. Maintenant Dentora gère les questions courantes et on n'intervient que quand c'est vraiment nécessaire.",
-            name: "Dr. Amine Tazi",
-            role: "Propriétaire, Clinique Dentaire Atlas",
-          },
-          {
-            quote:
-              "La vue patient à elle seule justifiait le changement. Je vois la fiabilité, les préférences et l'historique au même endroit, au lieu de fouiller dans des notes.",
-            name: "Dr. Salma El Fassi",
-            role: "Dentisterie générale, Clinique Dentaire Atlas",
-          },
-          {
-            quote:
-              "Importer notre liste de patients existante a pris quelques minutes, pas des jours. Nous étions actifs sur WhatsApp dès l'après-midi même.",
-            name: "Dr. Karim Idrissi",
-            role: "Endodontie, Clinique Dentaire Atlas",
-          },
-        ],
+        caseStudy: {
+          quote:
+            "Notre accueil, c'était trois personnes au téléphone toute la journée rien que pour suivre. Maintenant Dentora gère les questions courantes -- tarifs, disponibilités, reprogrammation -- et on n'intervient que quand c'est vraiment nécessaire. Importer notre liste de patients existante a pris quelques minutes, pas des jours, et nous étions actifs sur WhatsApp dès l'après-midi même. La vue patient à elle seule justifiait le changement : fiabilité, préférences et historique complet au même endroit, au lieu de fouiller dans des notes.",
+          name: "Dr. Amine Tazi",
+          role: "Propriétaire, Clinique Dentaire Atlas",
+          stats: [
+            { value: "3 -> 0", label: "Personnel nécessaire pour les appels courants de l'accueil" },
+            { value: "92 %", label: "Score de fiabilité des patients, suivi automatiquement" },
+            { value: "Le jour même", label: "Délai de mise en service de WhatsApp" },
+          ],
+        },
       },
       pricingPreview: {
         title: "Des tarifs simples et transparents",
@@ -1473,7 +1476,7 @@ export const fr = {
       subtitle: "Choisissez la formule adaptée à votre clinique. Changez de formule ou annulez à tout moment.",
       popular: "Le plus populaire",
       disclaimer:
-        "Prix affichés en USD, hors taxes. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
+        "Prix affichés en MAD, hors taxes. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
       billingToggle: {
         monthly: "Mensuel",
         yearly: "Annuel",
@@ -1495,10 +1498,10 @@ export const fr = {
         {
           name: "Starter",
           description: "Idéal pour les dentistes indépendants et petites cliniques qui démarrent leur parcours IA.",
-          monthlyPrice: "49 $",
-          yearlyOriginalPrice: "588 $",
-          yearlyBilledTotal: "470 $",
-          yearlySavings: "118 $",
+          monthlyPrice: "490 MAD",
+          yearlyOriginalPrice: "5 880 MAD",
+          yearlyBilledTotal: "4 700 MAD",
+          yearlySavings: "1 180 MAD",
           priceSuffix: "/mois",
           includesLabel: "",
           features: [
@@ -1520,10 +1523,10 @@ export const fr = {
           name: "Professional",
           description:
             "Conçu pour les cliniques en croissance qui veulent une automatisation complète, une meilleure communication patient et des analyses opérationnelles plus poussées.",
-          monthlyPrice: "99 $",
-          yearlyOriginalPrice: "1 188 $",
-          yearlyBilledTotal: "950 $",
-          yearlySavings: "238 $",
+          monthlyPrice: "990 MAD",
+          yearlyOriginalPrice: "11 880 MAD",
+          yearlyBilledTotal: "9 500 MAD",
+          yearlySavings: "2 380 MAD",
           priceSuffix: "/mois",
           includesLabel: "Tout ce qui est inclus dans Starter, plus :",
           features: [

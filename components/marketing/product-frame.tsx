@@ -44,7 +44,24 @@ export function ProductFrame({
           {address}
         </span>
       </div>
-      {/* `sizes` matches this frame's actual rendered width (hero: up to ~640px; feature-showcase's 2-col grid: ~560px; full-bleed on mobile) -- without it Next.js can't tell the image scales down from its 1568px intrinsic width and ships that size to every device. */}
+      {/*
+       * Below `sm`, the full 1568px-wide screenshot (sidebar + main panel) shrunk to a
+       * ~360px phone width renders every label and number too small to read -- so on
+       * mobile we instead show a cropped, zoomed-in `fill` variant that drops the left
+       * sidebar and focuses on the main content panel, which stays legible at phone
+       * width. `sm:` and up keep the original full-frame image unchanged.
+       */}
+      <div className="relative aspect-[4/3] overflow-hidden sm:hidden">
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          priority={priority}
+          sizes="100vw"
+          className="object-cover object-right-top"
+        />
+      </div>
+      {/* `sizes` matches this frame's actual rendered width (hero: up to ~640px; feature-showcase's 2-col grid: ~560px) -- without it Next.js can't tell the image scales down from its 1568px intrinsic width and ships that size to every device. */}
       <Image
         src={src}
         alt={alt}
@@ -52,7 +69,7 @@ export function ProductFrame({
         height={762}
         priority={priority}
         sizes="(min-width: 1280px) 640px, (min-width: 1024px) 560px, 100vw"
-        className="h-auto w-full"
+        className="hidden h-auto w-full sm:block"
       />
     </div>
   );

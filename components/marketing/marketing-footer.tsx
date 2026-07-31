@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, ShieldCheck, Stethoscope, UserCheck } from "lucide-react";
+import { Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Logo } from "@/components/marketing/logo";
 import { useTranslations } from "@/lib/i18n";
 
 export function MarketingFooter() {
@@ -15,16 +16,15 @@ export function MarketingFooter() {
   ];
 
   return (
-    <footer className="border-t border-slate-200/70 bg-slate-50 dark:border-white/10 dark:bg-slate-950">
+    <footer className="relative overflow-hidden border-t border-slate-200/70 bg-white dark:border-white/10 dark:bg-slate-950">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-white/10"
+        aria-hidden="true"
+      />
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr]">
           <div>
-            <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 text-white">
-                <Stethoscope className="size-4.5" aria-hidden="true" />
-              </span>
-              <span className="text-[17px] font-semibold tracking-tight text-slate-900 dark:text-white">Dentora AI</span>
-            </Link>
+            <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400">{t.marketing.footer.tagline}</p>
             <div className="mt-6 flex flex-col gap-2.5">
               {trustItems.map((item) => (
@@ -39,13 +39,13 @@ export function MarketingFooter() {
           <div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">{t.marketing.footer.product}</span>
             <nav className="mt-4 flex flex-col gap-3 text-sm">
-              <Link href="/#features" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/#features" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.features}
               </Link>
-              <Link href="/pricing" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.pricing}
               </Link>
-              <Link href="/demo" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/demo" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.demo}
               </Link>
             </nav>
@@ -54,10 +54,10 @@ export function MarketingFooter() {
           <div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">{t.marketing.footer.account}</span>
             <nav className="mt-4 flex flex-col gap-3 text-sm">
-              <Link href="/login" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.login}
               </Link>
-              <Link href="/login" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.getStarted}
               </Link>
             </nav>

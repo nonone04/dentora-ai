@@ -80,6 +80,7 @@ export function FeatureShowcase({
   address,
   reverse,
   badges,
+  secondaryCta,
 }: {
   eyebrow: string;
   title: string;
@@ -90,6 +91,7 @@ export function FeatureShowcase({
   address: string;
   reverse?: boolean;
   badges?: FloatingBadgeConfig[];
+  secondaryCta: string;
 }) {
   const t = useTranslations();
 
@@ -124,7 +126,7 @@ export function FeatureShowcase({
             href="/demo"
             className="text-sm font-semibold text-slate-600 underline decoration-slate-300 underline-offset-4 transition-colors hover:text-slate-900 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-white"
           >
-            {t.marketing.home.ctaSecondary}
+            {secondaryCta}
           </Link>
         </div>
       </Reveal>

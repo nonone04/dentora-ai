@@ -20,6 +20,7 @@ export function ShowcaseSections() {
     alt: string;
     address: string;
     badge: FloatingBadgeConfig;
+    secondaryCta: string;
   }[] = [
     {
       key: "ai",
@@ -31,6 +32,7 @@ export function ShowcaseSections() {
       alt: s.ai.alt,
       address: "dentora.ai/c/your-clinic",
       badge: { icon: MessagesSquare, value: s.ai.badgeValue, label: s.ai.badgeLabel, position: "top" },
+      secondaryCta: s.ai.secondaryCta,
     },
     {
       key: "calendar",
@@ -42,6 +44,7 @@ export function ShowcaseSections() {
       alt: s.calendar.alt,
       address: "app.dentora.ai/calendar",
       badge: { icon: CalendarCheck2, value: s.calendar.badgeValue, label: s.calendar.badgeLabel, position: "top" },
+      secondaryCta: s.calendar.secondaryCta,
     },
     {
       key: "patient360",
@@ -53,6 +56,7 @@ export function ShowcaseSections() {
       alt: s.patient360.alt,
       address: "app.dentora.ai/patients",
       badge: { icon: UserRound, value: s.patient360.badgeValue, label: s.patient360.badgeLabel, position: "bottom" },
+      secondaryCta: s.patient360.secondaryCta,
     },
     {
       key: "analytics",
@@ -64,6 +68,7 @@ export function ShowcaseSections() {
       alt: s.analytics.alt,
       address: "app.dentora.ai",
       badge: { icon: TrendingUp, value: s.analytics.badgeValue, label: s.analytics.badgeLabel, position: "bottom" },
+      secondaryCta: s.analytics.secondaryCta,
     },
     {
       key: "staff",
@@ -75,6 +80,7 @@ export function ShowcaseSections() {
       alt: s.staff.alt,
       address: "app.dentora.ai/staff",
       badge: { icon: UsersRound, value: s.staff.badgeValue, label: s.staff.badgeLabel, position: "top" },
+      secondaryCta: s.staff.secondaryCta,
     },
     {
       key: "security",
@@ -86,6 +92,7 @@ export function ShowcaseSections() {
       alt: s.security.alt,
       address: "app.dentora.ai/staff",
       badge: { icon: ShieldCheck, value: s.security.badgeValue, label: s.security.badgeLabel, position: "bottom" },
+      secondaryCta: s.security.secondaryCta,
     },
   ];
 
@@ -111,6 +118,7 @@ export function ShowcaseSections() {
               address={feature.address}
               reverse={index % 2 === 1}
               badges={[feature.badge]}
+              secondaryCta={feature.secondaryCta}
             />
           ))}
         </div>

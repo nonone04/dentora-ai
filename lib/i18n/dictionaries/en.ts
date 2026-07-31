@@ -1269,7 +1269,12 @@ export const en = {
         "Dentora AI handles bookings, reminders, and patient messages around the clock, so your team can focus on care instead of the phone.",
       ctaPrimary: "Start free",
       ctaSecondary: "Try the interactive demo",
-      trustLine: "Enterprise-grade security",
+      trustChips: {
+        encryption: "Encrypted in transit & at rest",
+        rbac: "Role-based access",
+        auditLogs: "Full audit logs",
+        gdpr: "GDPR ready",
+      },
       noCreditCard: "No credit card required",
       heroScreenshotAlt: "Dentora AI clinic dashboard showing today's appointments, patients, and clinic activity",
       floatingCardAppointments: "6 appointments today",
@@ -1301,6 +1306,7 @@ export const en = {
           alt: "Dentora AI patient chat widget instantly answering a question about teeth whitening pricing and duration",
           badgeValue: "Always on",
           badgeLabel: "Patient questions answered 24/7",
+          secondaryCta: "See the AI receptionist in action",
         },
         calendar: {
           eyebrow: "Smart Calendar",
@@ -1316,6 +1322,7 @@ export const en = {
           alt: "Dentora AI weekly calendar view with color-coded appointments across four dentists",
           badgeValue: "Conflict-free",
           badgeLabel: "Checked against real schedules",
+          secondaryCta: "Explore the scheduler",
         },
         patient360: {
           eyebrow: "Patient 360",
@@ -1331,6 +1338,7 @@ export const en = {
           alt: "Dentora AI patient 360 profile page showing medical information, reliability score, and timeline",
           badgeValue: "92% reliable",
           badgeLabel: "Patient reliability score",
+          secondaryCta: "View a sample patient profile",
         },
         analytics: {
           eyebrow: "Analytics Dashboard",
@@ -1346,6 +1354,7 @@ export const en = {
           alt: "Dentora AI overview dashboard showing total patients, active dentists, today's appointments, and monthly revenue",
           badgeValue: "19,700 MAD",
           badgeLabel: "This month's revenue",
+          secondaryCta: "See the dashboard live",
         },
         staff: {
           eyebrow: "Staff Management",
@@ -1361,6 +1370,7 @@ export const en = {
           alt: "Dentora AI staff management page showing team members, roles, and access status",
           badgeValue: "Role-based",
           badgeLabel: "Owner, admin, dentist, receptionist",
+          secondaryCta: "See staff & roles in the demo",
         },
         security: {
           eyebrow: "Security & Permissions",
@@ -1376,6 +1386,7 @@ export const en = {
           alt: "Dentora AI staff page showing a masked API key and an audit log entry recording who created it and when",
           badgeValue: "Fully audited",
           badgeLabel: "Every sensitive action logged",
+          secondaryCta: "Read how security works",
         },
       },
       howItWorks: {
@@ -1394,27 +1405,19 @@ export const en = {
         ],
       },
       testimonials: {
+        eyebrow: "Customer story",
         title: "Trusted by clinics that care about their patients",
-        items: [
-          {
-            quote:
-              "Our front desk used to be three people answering phones all day. Now Dentora handles the routine questions and we only step in when it actually matters.",
-            name: "Dr. Amine Tazi",
-            role: "Owner, Clinique Dentaire Atlas",
-          },
-          {
-            quote:
-              "The patient view alone was worth switching for. I can see reliability, preferences, and history in one place instead of digging through notes.",
-            name: "Dr. Salma El Fassi",
-            role: "General Dentistry, Clinique Dentaire Atlas",
-          },
-          {
-            quote:
-              "Importing our existing patient list took minutes, not days. We were live with WhatsApp the same afternoon.",
-            name: "Dr. Karim Idrissi",
-            role: "Endodontics, Clinique Dentaire Atlas",
-          },
-        ],
+        caseStudy: {
+          quote:
+            "Our front desk used to be three people answering phones all day just to keep up. Now Dentora handles the routine questions -- pricing, availability, rebooking -- and we only step in when it actually matters. Importing our existing patient list took minutes, not days, and we were live on WhatsApp the same afternoon. The patient view alone was worth switching for: reliability, preferences, and full history in one place instead of digging through notes.",
+          name: "Dr. Amine Tazi",
+          role: "Owner, Clinique Dentaire Atlas",
+          stats: [
+            { value: "3 -> 0", label: "Staff needed for routine front-desk calls" },
+            { value: "92%", label: "Patient reliability score, tracked automatically" },
+            { value: "Same-day", label: "Time to go live with WhatsApp" },
+          ],
+        },
       },
       pricingPreview: {
         title: "Simple, transparent pricing",
@@ -1463,7 +1466,7 @@ export const en = {
       subtitle: "Choose the plan that fits your clinic. Upgrade, downgrade, or cancel anytime.",
       popular: "Most popular",
       disclaimer:
-        "Prices shown in USD, excluding tax. Yearly billing is charged as a single upfront annual payment. Contact us for multi-clinic or custom Enterprise pricing.",
+        "Prices shown in MAD, excluding tax. Yearly billing is charged as a single upfront annual payment. Contact us for multi-clinic or custom Enterprise pricing.",
       billingToggle: {
         monthly: "Monthly",
         yearly: "Yearly",
@@ -1479,10 +1482,10 @@ export const en = {
         {
           name: "Starter",
           description: "Perfect for independent dentists and small clinics beginning their AI journey.",
-          monthlyPrice: "$49",
-          yearlyOriginalPrice: "$588",
-          yearlyBilledTotal: "$470",
-          yearlySavings: "$118",
+          monthlyPrice: "490 MAD",
+          yearlyOriginalPrice: "5,880 MAD",
+          yearlyBilledTotal: "4,700 MAD",
+          yearlySavings: "1,180 MAD",
           priceSuffix: "/month",
           includesLabel: "",
           features: [
@@ -1504,10 +1507,10 @@ export const en = {
           name: "Professional",
           description:
             "Designed for growing clinics that want complete automation, better patient communication and deeper operational insights.",
-          monthlyPrice: "$99",
-          yearlyOriginalPrice: "$1,188",
-          yearlyBilledTotal: "$950",
-          yearlySavings: "$238",
+          monthlyPrice: "990 MAD",
+          yearlyOriginalPrice: "11,880 MAD",
+          yearlyBilledTotal: "9,500 MAD",
+          yearlySavings: "2,380 MAD",
           priceSuffix: "/month",
           includesLabel: "Everything in Starter, plus:",
           features: [
