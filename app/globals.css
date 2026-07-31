@@ -374,3 +374,18 @@ html[dir="rtl"] {
   content-visibility: auto;
   contain-intrinsic-size: auto 800px;
 }
+
+/*
+ * Hides the scrollbar on horizontally swipeable mobile carousels (product
+ * showcase, pricing cards, testimonial stat pills) while keeping the
+ * element natively scrollable via touch -- the swipe affordance itself
+ * comes from CSS scroll-snap, not the scrollbar, so hiding it reads as a
+ * native app carousel rather than a truncated table.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

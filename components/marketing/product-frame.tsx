@@ -17,6 +17,7 @@ export function ProductFrame({
   priority,
   address = "app.dentora.ai",
   premium = false,
+  mobileObjectPosition = "right top",
 }: {
   src: string;
   alt: string;
@@ -24,6 +25,16 @@ export function ProductFrame({
   priority?: boolean;
   address?: string;
   premium?: boolean;
+  /**
+   * CSS `object-position` for the below-`sm` cropped variant, e.g. "20% 35%"
+   * or "center top" -- lets each caller pick which region of the same
+   * screenshot reads as the "zoomed in" mobile crop (the product showcase
+   * carousel gives every feature its own deliberate crop) without needing
+   * separate cropped image assets. Passed as an inline style, not a
+   * Tailwind class, since arbitrary/dynamic `object-[...]` strings aren't
+   * statically discoverable by Tailwind's compiler.
+   */
+  mobileObjectPosition?: string;
 }) {
   const frame = (
     <div
@@ -58,7 +69,8 @@ export function ProductFrame({
           fill
           priority={priority}
           sizes="100vw"
-          className="object-cover object-right-top"
+          className="object-cover"
+          style={{ objectPosition: mobileObjectPosition }}
         />
       </div>
       {/* `sizes` matches this frame's actual rendered width (hero: up to ~640px; feature-showcase's 2-col grid: ~560px) -- without it Next.js can't tell the image scales down from its 1568px intrinsic width and ships that size to every device. */}

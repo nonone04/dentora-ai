@@ -20,7 +20,7 @@ export function HeroSection() {
       <ParallaxProvider className="relative">
         <SectionBackground intensity="hero" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pt-40 pb-8 sm:px-6 sm:pt-48 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 pt-24 pb-6 sm:px-6 md:pt-40 md:pb-8 lg:pt-48 lg:px-8">
           <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
             <Reveal>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
@@ -31,7 +31,7 @@ export function HeroSection() {
 
             {/* Rendered at full opacity immediately -- no mount/scroll reveal -- since this is the
                 first thing anyone reads and it must never be the thing motion makes them wait for. */}
-            <h1 className="mt-7 text-balance text-5xl font-semibold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl dark:text-white">
+            <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-slate-900 md:mt-7 md:text-6xl lg:text-7xl dark:text-white">
               {t.marketing.home.headlineStart}{" "}
               <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
                 {t.marketing.home.headlineHighlight}
@@ -39,17 +39,17 @@ export function HeroSection() {
             </h1>
 
             <Reveal delay={550}>
-              <p className="mt-7 max-w-2xl text-balance text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+              <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-slate-600 md:mt-7 md:text-lg dark:text-slate-300">
                 {t.marketing.home.subheadline}
               </p>
             </Reveal>
 
             <Reveal delay={700}>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row md:mt-9 md:w-auto">
                 <Link
                   href="/login"
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 rounded-full bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-blue-700",
+                    "inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 md:min-h-0 md:w-auto",
                     ctaGlowClass,
                   )}
                 >
@@ -59,7 +59,7 @@ export function HeroSection() {
                 <Link
                   href="/demo"
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10",
+                    "inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:min-h-0 md:w-auto dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10",
                     ctaHoverClass,
                   )}
                 >
@@ -69,7 +69,7 @@ export function HeroSection() {
             </Reveal>
 
             <Reveal delay={850}>
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+              <div className="no-scrollbar -mx-4 mt-5 flex snap-x snap-mandatory items-center gap-2 overflow-x-auto px-4 md:mx-0 md:mt-7 md:flex-wrap md:justify-center md:overflow-visible md:px-0">
                 {[
                   { icon: Lock, label: t.marketing.home.trustChips.encryption },
                   { icon: UserCheck, label: t.marketing.home.trustChips.rbac },
@@ -79,7 +79,7 @@ export function HeroSection() {
                   <span
                     key={label}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border border-slate-200/60 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:text-slate-300",
+                      "inline-flex shrink-0 snap-center items-center gap-1.5 rounded-full border border-slate-200/60 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:text-slate-300",
                       glassPanelClass,
                     )}
                   >
@@ -92,7 +92,7 @@ export function HeroSection() {
             </Reveal>
           </div>
 
-          <Reveal delay={950} className="relative mx-auto mt-16 max-w-5xl">
+          <Reveal delay={950} className="relative -mx-4 mt-8 md:mx-auto md:mt-16 md:max-w-5xl">
             <TiltFrame>
               <ProductFrame src="/screenshots/dashboard-overview.webp" alt={t.marketing.home.heroScreenshotAlt} priority premium className="mx-auto" />
             </TiltFrame>

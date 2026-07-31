@@ -14,17 +14,19 @@ export function HowItWorksSection() {
   const steps = t.marketing.home.howItWorks.steps;
 
   return (
-    <section className="defer-offscreen relative overflow-hidden bg-slate-50 py-24 dark:bg-slate-900/40">
+    <section className="defer-offscreen relative overflow-hidden bg-slate-50 py-16 dark:bg-slate-900/40 md:py-24">
       <SectionBackground intensity="subtle" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Reveal className="mx-auto mb-16 max-w-2xl text-center">
-          <h2 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        <Reveal className="mx-auto mb-10 max-w-2xl text-center md:mb-16">
+          <h2 className="text-balance text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-white">
             {t.marketing.home.howItWorks.title}
           </h2>
-          <p className="mt-4 text-balance text-lg text-slate-600 dark:text-slate-300">{t.marketing.home.howItWorks.subtitle}</p>
+          <p className="mt-3 text-balance text-base text-slate-600 md:mt-4 md:text-lg dark:text-slate-300">
+            {t.marketing.home.howItWorks.subtitle}
+          </p>
         </Reveal>
 
-        <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
+        <div className="grid gap-8 md:grid-cols-3">
           {steps.map((step, index) => {
             const Icon = ICONS[index % ICONS.length];
             return (
