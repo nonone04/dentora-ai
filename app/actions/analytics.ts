@@ -1,7 +1,7 @@
 "use server";
 
 import { getDashboardSummary } from "@/lib/analytics";
-import type { DashboardSummary, DateRange } from "@/lib/analytics";
+import type { DashboardSummary, DateRange, ReliabilityLabelValue } from "@/lib/analytics";
 import { getConversationTrace, getSystemHealth } from "@/lib/observability";
 import type { ConversationTrace, SystemHealth } from "@/lib/observability";
 import { requireManager } from "@/lib/supabase/clinic";
@@ -39,6 +39,52 @@ export async function getSystemHealthAction(clinicId: string, windowHours?: numb
   const supabase = await createClient();
   const data = await getSystemHealth(supabase, { clinicId, windowHours });
   return { data };
+}
+
+export type PatientInsightRow = {
+  patientId: string;
+  fullName: string;
+  reliabilityLabel: ReliabilityLabelValue;
+  reliabilityScore: number;
+};
+
+/**
+ * Named patients behind patient-insights.tsx's reliability distribution --
+ * computePatientBehaviorMetrics (lib/analytics/patient-behavior.ts) only
+ * counts buckets and intentionally discards patient identity, so this is a
+ * separate, identity-preserving query over the same patient_profiles table
+ * for the dashboard's "needs a nudge" recall row. Lowest reliability score
+ * first, since that's the actionable list.
+ */
+export async function getPatientInsightRowsAction(clinicId: string, limit = 10): Promise<AnalyticsResult<PatientInsightRow[]>> {
+  const user = await requireManager(clinicId);
+  if (!user) return { error: PERMISSION_ERROR };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("patient_profiles")
+    .select("patient_id, reliability_label, reliability_score, patients(full_name)")
+    .eq("clinic_id", clinicId)
+    .order("reliability_score", { ascending: true })
+    .limit(limit);
+
+  if (error) return { error: error.message };
+
+  const rows = (data ?? []) as unknown as {
+    patient_id: string;
+    reliability_label: ReliabilityLabelValue;
+    reliability_score: number;
+    patients: { full_name: string } | null;
+  }[];
+
+  return {
+    data: rows.map((row) => ({
+      patientId: row.patient_id,
+      fullName: row.patients?.full_name ?? "",
+      reliabilityLabel: row.reliability_label,
+      reliabilityScore: row.reliability_score,
+    })),
+  };
 }
 
 export async function getConversationTraceAction(clinicId: string, conversationId: string): Promise<AnalyticsResult<ConversationTrace>> {

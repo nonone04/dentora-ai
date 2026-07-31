@@ -80,6 +80,14 @@ export const en = {
     greetingMorning: "Good morning",
     greetingAfternoon: "Good afternoon",
     greetingEvening: "Good evening",
+    greetingStatus: {
+      aiConversationsOne: "{count} AI conversation today",
+      aiConversationsOther: "{count} AI conversations today",
+      appointmentsConfirmedOne: "{count} appointment confirmed",
+      appointmentsConfirmedOther: "{count} appointments confirmed",
+      needsAttentionOne: "{count} patient needs attention",
+      needsAttentionOther: "{count} patients need attention",
+    },
     quickActions: {
       newAppointment: "New appointment",
       newPatient: "New patient",
@@ -97,6 +105,7 @@ export const en = {
       notificationDelivery: "Notification delivery",
       decisionsSuffix: "decisions, last 30 days",
       sentSuffix: "sent, last 30 days",
+      vsLastWeekSuffix: "vs last week",
     },
     schedule: {
       title: "Today's schedule",
@@ -106,6 +115,12 @@ export const en = {
       emptyDescription: "New bookings, whether made by staff or the AI assistant, will show up here.",
       error: "Couldn't load today's schedule",
       unknownPatient: "Unknown patient",
+    },
+    revenueChart: {
+      title: "Revenue",
+      windowSuffix: "Last {days} days",
+      avgPerDayPrefix: "Avg/day",
+      error: "Couldn't load revenue trend",
     },
     aiActivity: {
       title: "AI activity",
@@ -120,6 +135,7 @@ export const en = {
       title: "System health",
       windowLabel: "Last 24 hours",
       windowSuffix: "Last {hours}h · overall {status}",
+      healthScoreLabel: "Clinic health",
       lockedTitle: "Owners & admins only",
       lockedDescription: "Ask a clinic owner or admin for a look at AI system health.",
       error: "Couldn't load system health",
@@ -150,6 +166,9 @@ export const en = {
       newVsReturning: "New vs. returning",
       newLabel: "new",
       returningLabel: "returning",
+      recallRowTitle: "Needs a nudge",
+      recallRowDescription: "Patients with the lowest reliability scores right now",
+      remindAction: "Remind",
       reliability: {
         excellent: "Excellent",
         good: "Good",

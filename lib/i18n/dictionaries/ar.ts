@@ -76,6 +76,14 @@ export const ar = {
     greetingMorning: "صباح الخير",
     greetingAfternoon: "مساء الخير",
     greetingEvening: "مساء الخير",
+    greetingStatus: {
+      aiConversationsOne: "محادثة واحدة مع الذكاء الاصطناعي اليوم",
+      aiConversationsOther: "{count} محادثة مع الذكاء الاصطناعي اليوم",
+      appointmentsConfirmedOne: "موعد واحد مؤكد",
+      appointmentsConfirmedOther: "{count} موعد مؤكد",
+      needsAttentionOne: "مريض واحد بحاجة إلى انتباهك",
+      needsAttentionOther: "{count} مريض بحاجة إلى انتباهك",
+    },
     quickActions: {
       newAppointment: "موعد جديد",
       newPatient: "مريض جديد",
@@ -93,6 +101,7 @@ export const ar = {
       notificationDelivery: "تسليم الإشعارات",
       decisionsSuffix: "قراراً، آخر 30 يوماً",
       sentSuffix: "مُرسلة، آخر 30 يوماً",
+      vsLastWeekSuffix: "مقارنة بالأسبوع الماضي",
     },
     schedule: {
       title: "جدول اليوم",
@@ -102,6 +111,12 @@ export const ar = {
       emptyDescription: "ستظهر هنا الحجوزات الجديدة، سواء أجراها الموظفون أو المساعد الذكي.",
       error: "تعذّر تحميل جدول اليوم",
       unknownPatient: "مريض غير معروف",
+    },
+    revenueChart: {
+      title: "الإيرادات",
+      windowSuffix: "آخر {days} يوماً",
+      avgPerDayPrefix: "متوسط/يوم",
+      error: "تعذّر تحميل اتجاه الإيرادات",
     },
     aiActivity: {
       title: "نشاط الذكاء الاصطناعي",
@@ -116,6 +131,7 @@ export const ar = {
       title: "سلامة النظام",
       windowLabel: "آخر 24 ساعة",
       windowSuffix: "آخر {hours} ساعة · الحالة العامة {status}",
+      healthScoreLabel: "سلامة العيادة",
       lockedTitle: "للمالكين والمسؤولين فقط",
       lockedDescription: "اطلب من مالك العيادة أو أحد المسؤولين الاطلاع على سلامة نظام الذكاء الاصطناعي.",
       error: "تعذّر تحميل سلامة النظام",
@@ -146,6 +162,9 @@ export const ar = {
       newVsReturning: "جدد مقابل عائدين",
       newLabel: "جدد",
       returningLabel: "عائدون",
+      recallRowTitle: "بحاجة إلى تذكير",
+      recallRowDescription: "المرضى الأقل موثوقية حالياً",
+      remindAction: "تذكير",
       reliability: {
         excellent: "ممتازة",
         good: "جيدة",

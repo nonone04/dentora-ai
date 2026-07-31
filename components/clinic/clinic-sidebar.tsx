@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import {
   BookOpen,
   CalendarClock,
@@ -42,13 +43,24 @@ const NAV_ITEMS: NavItem[] = [
   { label: (t) => t.nav.settings, href: "/settings", icon: Settings, roles: ["owner", "admin"], tourId: "settings" },
 ];
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function ClinicSidebar({
   clinicId,
+  clinicName,
   role,
   open = false,
   onNavigate,
 }: {
   clinicId: string;
+  clinicName: string;
   role: ClinicRole;
   /** Whether the mobile drawer is open. Ignored at the lg+ breakpoint, where the sidebar is always visible in-flow. */
   open?: boolean;
@@ -57,6 +69,7 @@ export function ClinicSidebar({
 }) {
   const pathname = usePathname();
   const t = useTranslations();
+  const shouldReduceMotion = useReducedMotion();
   const base = `/clinic/${clinicId}`;
 
   const items = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role));
@@ -64,32 +77,66 @@ export function ClinicSidebar({
   return (
     <nav
       className={cn(
-        "fixed inset-y-0 start-0 z-50 flex w-64 shrink-0 -translate-x-full flex-col gap-1 border-e border-border bg-sidebar p-3 transition-transform duration-200 ease-out rtl:translate-x-full",
-        "lg:static lg:z-auto lg:w-56 lg:translate-x-0 lg:bg-transparent rtl:lg:translate-x-0",
+        "fixed inset-y-0 start-0 z-50 flex w-72 shrink-0 -translate-x-full flex-col p-3 transition-transform duration-300 ease-out rtl:translate-x-full",
+        "lg:static lg:z-auto lg:w-64 lg:translate-x-0 rtl:lg:translate-x-0",
         open && "translate-x-0 rtl:translate-x-0",
       )}
     >
-      {items.map((item) => {
-        const href = `${base}${item.href}`;
-        const isActive = pathname === href;
-        const Icon = item.icon;
+      <div className="flex h-full flex-col gap-6 rounded-3xl border bg-foreground/[0.03] p-3.5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:shadow-[0_8px_40px_-16px_rgba(0,0,0,0.6)]">
+        <Link href={base} className="flex items-center gap-2.5 px-1.5 pt-1">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/25">
+            <Stethoscope className="size-4.5" aria-hidden="true" />
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight text-foreground">Dentora AI</span>
+        </Link>
 
-        return (
-          <Link
-            key={item.href}
-            href={href}
-            onClick={onNavigate}
-            data-tour={item.tourId}
-            className={cn(
-              "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-              isActive && "bg-muted text-foreground",
-            )}
-          >
-            <Icon className="size-4" />
-            {item.label(t)}
-          </Link>
-        );
-      })}
+        <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
+          {items.map((item) => {
+            const href = `${base}${item.href}`;
+            const isActive = pathname === href;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={href}
+                onClick={onNavigate}
+                data-tour={item.tourId}
+                className={cn(
+                  "relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150",
+                  isActive ? "text-foreground" : "hover:bg-foreground/[0.04] hover:text-foreground",
+                )}
+              >
+                {isActive &&
+                  (shouldReduceMotion ? (
+                    <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/15 via-violet-500/10 to-transparent ring-1 ring-inset ring-blue-400/25" />
+                  ) : (
+                    <motion.span
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/15 via-violet-500/10 to-transparent ring-1 ring-inset ring-blue-400/25"
+                      transition={{ type: "spring", stiffness: 420, damping: 38 }}
+                    />
+                  ))}
+                {isActive && (
+                  <span className="absolute inset-y-1.5 start-0 w-[3px] rounded-full bg-gradient-to-b from-blue-400 to-violet-400 shadow-[0_0_10px_2px_rgba(96,165,250,0.55)]" />
+                )}
+                <Icon className="relative z-10 size-4 shrink-0" aria-hidden="true" />
+                <span className="relative z-10 truncate">{item.label(t)}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2.5 rounded-xl border bg-foreground/[0.02] px-2.5 py-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/25 to-violet-500/25 text-[11px] font-semibold uppercase text-foreground ring-1 ring-foreground/10">
+            {initials(clinicName) || clinicName.slice(0, 2).toUpperCase()}
+          </span>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-medium text-foreground">{clinicName}</span>
+            <span className="truncate text-[11px] capitalize text-muted-foreground">{role}</span>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 }

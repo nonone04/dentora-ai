@@ -1,7 +1,8 @@
 import { CalendarClock } from "lucide-react";
+import { GlassCard } from "@/components/dashboard/glass-card";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,15 +23,15 @@ type AppointmentRow = {
 
 const STATUS_DOT: Record<string, string> = {
   scheduled: "bg-muted-foreground",
-  confirmed: "bg-brand",
-  completed: "bg-success",
+  confirmed: "bg-brand shadow-[0_0_10px_2px_theme(colors.blue.400/0.5)]",
+  completed: "bg-success shadow-[0_0_10px_2px_theme(colors.emerald.400/0.5)]",
   cancelled: "bg-destructive",
   no_show: "bg-destructive",
 };
 
 export function AppointmentTimelineSkeleton() {
   return (
-    <Card className="h-full" aria-hidden="true">
+    <GlassCard className="h-full" aria-hidden="true">
       <div className="flex flex-col gap-1.5 border-b p-(--card-spacing)">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-24" />
@@ -44,7 +45,7 @@ export function AppointmentTimelineSkeleton() {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -77,15 +78,15 @@ export async function AppointmentTimeline({ clinicId }: { clinicId: string }) {
 
   if (appointments === null) {
     return (
-      <Card className="h-full">
+      <GlassCard className="h-full">
         <SectionHeader title={t.dashboard.schedule.title} />
         <ErrorState title={t.dashboard.schedule.error} />
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
-    <Card className="h-full">
+    <GlassCard className="h-full">
       <SectionHeader
         title={t.dashboard.schedule.title}
         description={
@@ -102,7 +103,11 @@ export async function AppointmentTimeline({ clinicId }: { clinicId: string }) {
         ) : (
           <ol className="flex flex-col">
             {appointments.map((appt, index) => (
-              <li key={appt.id} className="flex gap-3">
+              <li
+                key={appt.id}
+                style={{ animationDelay: `${index * 60}ms`, animationDuration: "450ms", animationFillMode: "backwards" }}
+                className="flex gap-3 rounded-xl fade-in slide-in-from-bottom-1 animate-in"
+              >
                 <time
                   dateTime={appt.start_at}
                   className="w-14 shrink-0 pt-0.5 text-end text-xs font-medium text-muted-foreground tabular-nums"
@@ -114,9 +119,11 @@ export async function AppointmentTimeline({ clinicId }: { clinicId: string }) {
                     aria-hidden="true"
                     className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", STATUS_DOT[appt.status] ?? "bg-muted-foreground")}
                   />
-                  {index < appointments.length - 1 && <span aria-hidden="true" className="w-px flex-1 bg-border" />}
+                  {index < appointments.length - 1 && (
+                    <span aria-hidden="true" className="w-px flex-1 bg-gradient-to-b from-foreground/15 to-transparent" />
+                  )}
                 </div>
-                <div className="flex flex-1 flex-wrap items-start justify-between gap-x-3 gap-y-1 pb-5">
+                <div className="flex flex-1 flex-wrap items-start justify-between gap-x-3 gap-y-1 rounded-xl px-2 -mx-2 pb-5 transition-colors duration-150 hover:bg-foreground/[0.03]">
                   <div>
                     <div className="text-sm font-medium">{appt.patients?.full_name ?? t.dashboard.schedule.unknownPatient}</div>
                     <div className="text-xs text-muted-foreground">
@@ -132,6 +139,6 @@ export async function AppointmentTimeline({ clinicId }: { clinicId: string }) {
           </ol>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

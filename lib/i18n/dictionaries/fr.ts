@@ -76,6 +76,14 @@ export const fr = {
     greetingMorning: "Bonjour",
     greetingAfternoon: "Bon après-midi",
     greetingEvening: "Bonsoir",
+    greetingStatus: {
+      aiConversationsOne: "{count} conversation IA aujourd'hui",
+      aiConversationsOther: "{count} conversations IA aujourd'hui",
+      appointmentsConfirmedOne: "{count} rendez-vous confirmé",
+      appointmentsConfirmedOther: "{count} rendez-vous confirmés",
+      needsAttentionOne: "{count} patient nécessite votre attention",
+      needsAttentionOther: "{count} patients nécessitent votre attention",
+    },
     quickActions: {
       newAppointment: "Nouveau rendez-vous",
       newPatient: "Nouveau patient",
@@ -93,6 +101,7 @@ export const fr = {
       notificationDelivery: "Livraison des notifications",
       decisionsSuffix: "décisions, 30 derniers jours",
       sentSuffix: "envoyées, 30 derniers jours",
+      vsLastWeekSuffix: "vs semaine dernière",
     },
     schedule: {
       title: "Planning du jour",
@@ -103,6 +112,12 @@ export const fr = {
         "Les nouvelles réservations, faites par le personnel ou l'assistant IA, apparaîtront ici.",
       error: "Impossible de charger le planning du jour",
       unknownPatient: "Patient inconnu",
+    },
+    revenueChart: {
+      title: "Revenus",
+      windowSuffix: "{days} derniers jours",
+      avgPerDayPrefix: "Moy./jour",
+      error: "Impossible de charger la tendance des revenus",
     },
     aiActivity: {
       title: "Activité de l'IA",
@@ -118,6 +133,7 @@ export const fr = {
       title: "État du système",
       windowLabel: "Dernières 24 heures",
       windowSuffix: "Dernières {hours} h · état global {status}",
+      healthScoreLabel: "Santé de la clinique",
       lockedTitle: "Réservé aux propriétaires et administrateurs",
       lockedDescription:
         "Demandez à un propriétaire ou administrateur de la clinique de consulter l'état du système IA.",
@@ -151,6 +167,9 @@ export const fr = {
       newVsReturning: "Nouveaux vs. fidèles",
       newLabel: "nouveaux",
       returningLabel: "fidèles",
+      recallRowTitle: "À relancer",
+      recallRowDescription: "Patients ayant actuellement les scores de fiabilité les plus bas",
+      remindAction: "Relancer",
       reliability: {
         excellent: "Excellente",
         good: "Bonne",

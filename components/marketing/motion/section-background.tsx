@@ -13,7 +13,7 @@ const NOISE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter><rect width="100%" height="100%" filter="url(#n)" /></svg>';
 const NOISE_BACKGROUND_IMAGE = `url("data:image/svg+xml,${encodeURIComponent(NOISE_SVG)}")`;
 
-type Intensity = "hero" | "subtle" | "gradient" | "auth";
+type Intensity = "hero" | "subtle" | "gradient" | "auth" | "clinic";
 
 /**
  * `position` (placement + size) and `paint` (color/opacity) are kept
@@ -48,11 +48,18 @@ const AUTH_ORBS: Orb[] = [
   { position: "bottom-[-12%] start-[20%] size-64", paint: "bg-sky-400/15", drift: "drift-c", strength: 0 },
 ];
 
+const CLINIC_ORBS: Orb[] = [
+  { position: "-top-32 start-[6%] size-96", paint: "bg-blue-300/40 dark:bg-blue-500/20", drift: "drift-a", strength: 0 },
+  { position: "top-[10%] end-[-8%] size-80", paint: "bg-violet-300/35 dark:bg-violet-500/18", drift: "drift-b", strength: 0 },
+  { position: "bottom-[-15%] start-[35%] size-72", paint: "bg-teal-300/30 dark:bg-teal-400/12", drift: "drift-c", strength: 0 },
+];
+
 const ORBS_BY_INTENSITY: Record<Intensity, Orb[]> = {
   hero: HERO_ORBS,
   subtle: SUBTLE_ORBS,
   gradient: GRADIENT_ORBS,
   auth: AUTH_ORBS,
+  clinic: CLINIC_ORBS,
 };
 
 /**
@@ -69,6 +76,8 @@ const WASH_BY_INTENSITY: Record<Intensity, string> = {
     "bg-[radial-gradient(ellipse_60%_45%_at_50%_0%,rgba(37,99,235,0.08),transparent_70%)] dark:bg-[radial-gradient(ellipse_60%_45%_at_50%_0%,rgba(37,99,235,0.07),transparent_70%)]",
   gradient: "bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(255,255,255,0.12),transparent_70%)]",
   auth: "bg-[radial-gradient(ellipse_70%_55%_at_30%_0%,rgba(59,130,246,0.25),transparent_70%)]",
+  clinic:
+    "bg-[radial-gradient(ellipse_75%_60%_at_20%_-10%,rgba(99,102,241,0.20),transparent_65%),radial-gradient(ellipse_65%_55%_at_100%_0%,rgba(45,212,191,0.13),transparent_60%)] dark:bg-[radial-gradient(ellipse_75%_60%_at_20%_-10%,rgba(99,102,241,0.16),transparent_65%),radial-gradient(ellipse_65%_55%_at_100%_0%,rgba(45,212,191,0.10),transparent_60%)]",
 };
 
 /**

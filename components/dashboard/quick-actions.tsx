@@ -38,7 +38,10 @@ export async function QuickActions({ clinicId }: { clinicId: string }) {
     defaultDurationMinutes: service.default_duration_minutes as number,
   }));
 
-  const linkClass = cn(buttonVariants({ variant: "outline" }), "gap-1.5");
+  const linkClass = cn(
+    buttonVariants({ variant: "outline" }),
+    "gap-1.5 rounded-full border-foreground/10 bg-foreground/[0.03] backdrop-blur-xl hover:bg-foreground/[0.07]",
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-2">

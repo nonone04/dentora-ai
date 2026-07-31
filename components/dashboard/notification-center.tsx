@@ -1,7 +1,8 @@
 import { Bell, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { GlassCard } from "@/components/dashboard/glass-card";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +29,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 
 export function NotificationCenterSkeleton() {
   return (
-    <Card className="h-full" aria-hidden="true">
+    <GlassCard className="h-full" aria-hidden="true">
       <div className="flex flex-col gap-1.5 border-b p-(--card-spacing)">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-3 w-36" />
@@ -36,12 +37,12 @@ export function NotificationCenterSkeleton() {
       <CardContent className="flex flex-col gap-4">
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <Skeleton className="size-7 shrink-0 rounded-full" />
             <Skeleton className="h-4 flex-1" />
           </div>
         ))}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -61,17 +62,17 @@ export async function NotificationCenter({ clinicId }: { clinicId: string }) {
 
   if (deliveries === null) {
     return (
-      <Card className="h-full">
+      <GlassCard className="h-full">
         <SectionHeader title={t.dashboard.notificationCenter.title} />
         <ErrorState title={t.dashboard.notificationCenter.error} />
-      </Card>
+      </GlassCard>
     );
   }
 
   const eventLabels = t.dashboard.notificationCenter.events as Record<string, string>;
 
   return (
-    <Card className="h-full">
+    <GlassCard className="h-full">
       <SectionHeader title={t.dashboard.notificationCenter.title} description={t.dashboard.notificationCenter.description} />
       <CardContent>
         {deliveries.length === 0 ? (
@@ -81,30 +82,41 @@ export async function NotificationCenter({ clinicId }: { clinicId: string }) {
             description={t.dashboard.notificationCenter.emptyDescription}
           />
         ) : (
-          <ul className="flex flex-col gap-4">
-            {deliveries.map((delivery) => {
+          <ul className="flex flex-col">
+            {deliveries.map((delivery, index) => {
               const Icon = CHANNEL_ICON[delivery.channel] ?? Bell;
               const eventType = delivery.eventType;
               return (
-                <li key={delivery.id} className="flex items-center gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {(eventType && eventLabels[eventType]) || t.dashboard.notificationCenter.genericEvent}
+                <li
+                  key={delivery.id}
+                  style={{ animationDelay: `${index * 60}ms`, animationDuration: "450ms", animationFillMode: "backwards" }}
+                  className="flex gap-3 fade-in slide-in-from-bottom-1 animate-in"
+                >
+                  <div className="flex w-7 shrink-0 flex-col items-center">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-info/15 text-info ring-1 ring-foreground/8">
+                      <Icon className="size-3.5" aria-hidden="true" />
                     </div>
-                    <div className="text-xs text-muted-foreground">{formatRelativeTime(delivery.createdAt, locale)}</div>
+                    {index < deliveries.length - 1 && (
+                      <span aria-hidden="true" className="w-px flex-1 bg-gradient-to-b from-foreground/12 to-transparent" />
+                    )}
                   </div>
-                  <Badge variant={STATUS_VARIANT[delivery.status] ?? "secondary"} className="shrink-0">
-                    {t.deliveryStatus[delivery.status as keyof typeof t.deliveryStatus] ?? delivery.status}
-                  </Badge>
+                  <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 pb-4 transition-colors duration-150 hover:bg-foreground/[0.03]">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {(eventType && eventLabels[eventType]) || t.dashboard.notificationCenter.genericEvent}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">{formatRelativeTime(delivery.createdAt, locale)}</div>
+                    </div>
+                    <Badge variant={STATUS_VARIANT[delivery.status] ?? "secondary"} className="shrink-0">
+                      {t.deliveryStatus[delivery.status as keyof typeof t.deliveryStatus] ?? delivery.status}
+                    </Badge>
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

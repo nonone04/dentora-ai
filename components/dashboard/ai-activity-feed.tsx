@@ -1,7 +1,8 @@
 import { Bot, MessageCircle, MessageSquare, Smartphone, Sparkles } from "lucide-react";
+import { GlassCard } from "@/components/dashboard/glass-card";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 
 export function AIActivityFeedSkeleton() {
   return (
-    <Card className="h-full" aria-hidden="true">
+    <GlassCard className="h-full" aria-hidden="true">
       <div className="flex flex-col gap-1.5 border-b p-(--card-spacing)">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-3 w-32" />
@@ -42,15 +43,15 @@ export function AIActivityFeedSkeleton() {
       <CardContent className="flex flex-col gap-4">
         {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="flex items-start gap-3">
-            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <Skeleton className="size-9 shrink-0 rounded-full" />
             <div className="flex flex-1 flex-col gap-1.5">
               <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-8 w-full rounded-2xl" />
             </div>
           </div>
         ))}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -99,10 +100,10 @@ export async function AIActivityFeed({ clinicId }: { clinicId: string }) {
 
   if (activity === null) {
     return (
-      <Card className="h-full">
+      <GlassCard className="h-full">
         <SectionHeader title={t.dashboard.aiActivity.title} />
         <ErrorState title={t.dashboard.aiActivity.error} />
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -110,7 +111,7 @@ export async function AIActivityFeed({ clinicId }: { clinicId: string }) {
   const channelLabels: Record<string, string> = { whatsapp: t.channel.whatsapp, web_chat: t.channel.web_chat, sms: t.channel.sms };
 
   return (
-    <Card className="h-full">
+    <GlassCard className="h-full">
       <SectionHeader
         title={t.dashboard.aiActivity.title}
         description={t.dashboard.aiActivity.description}
@@ -121,29 +122,33 @@ export async function AIActivityFeed({ clinicId }: { clinicId: string }) {
         {conversations.length === 0 ? (
           <EmptyState icon={Sparkles} title={t.dashboard.aiActivity.empty} description={t.dashboard.aiActivity.emptyDescription} />
         ) : (
-          <ul className="flex flex-col gap-4">
-            {conversations.map((conversation) => {
+          <ul className="flex flex-col gap-3">
+            {conversations.map((conversation, index) => {
               const Icon = CHANNEL_ICON[conversation.channel] ?? Bot;
               const lastMessage = lastMessageByConversation.get(conversation.id);
 
               return (
-                <li key={conversation.id} className="flex items-start gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+                <li
+                  key={conversation.id}
+                  style={{ animationDelay: `${index * 60}ms`, animationDuration: "450ms", animationFillMode: "backwards" }}
+                  className="flex items-start gap-3 rounded-xl fade-in slide-in-from-bottom-1 -mx-2 animate-in p-2 transition-colors duration-150 hover:bg-foreground/[0.03]"
+                >
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/25 to-violet-500/25 text-blue-300 ring-1 ring-foreground/10">
                     <Icon className="size-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium">
+                      <span className="truncate text-sm font-medium text-foreground">
                         {conversation.patients?.full_name ?? t.dashboard.aiActivity.unknownPatient}
                       </span>
                       <Badge variant={STATUS_VARIANT[conversation.status] ?? "secondary"} className="shrink-0">
                         {t.conversationStatus[conversation.status as keyof typeof t.conversationStatus] ?? conversation.status}
                       </Badge>
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    <p className="mt-1.5 truncate rounded-2xl rounded-tl-sm bg-foreground/[0.04] px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-foreground/5">
                       {lastMessage ? lastMessage.content : t.dashboard.aiActivity.noMessages}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-1 text-[11px] text-muted-foreground">
                       {channelLabels[conversation.channel] ?? conversation.channel} · {formatRelativeTime(conversation.updated_at, locale)}
                     </p>
                   </div>
@@ -153,6 +158,6 @@ export async function AIActivityFeed({ clinicId }: { clinicId: string }) {
           </ul>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

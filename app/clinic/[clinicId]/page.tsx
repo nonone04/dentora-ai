@@ -4,9 +4,11 @@ import { AIActivityFeed, AIActivityFeedSkeleton } from "@/components/dashboard/a
 import { AIPerformanceStats, AIPerformanceStatsSkeleton } from "@/components/dashboard/ai-performance-stats";
 import { AppointmentTimeline, AppointmentTimelineSkeleton } from "@/components/dashboard/appointment-timeline";
 import { ClinicStats, ClinicStatsSkeleton } from "@/components/dashboard/clinic-stats";
+import { GreetingStatus, GreetingStatusSkeleton } from "@/components/dashboard/greeting-status";
 import { NotificationCenter, NotificationCenterSkeleton } from "@/components/dashboard/notification-center";
 import { PatientInsights, PatientInsightsSkeleton } from "@/components/dashboard/patient-insights";
 import { QuickActions, QuickActionsSkeleton } from "@/components/dashboard/quick-actions";
+import { RevenueChart, RevenueChartSkeleton } from "@/components/dashboard/revenue-chart";
 import { SystemHealthPanel, SystemHealthPanelSkeleton } from "@/components/dashboard/system-health-panel";
 import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import type { Dictionary } from "@/lib/i18n/server";
@@ -49,36 +51,55 @@ export default async function ClinicOverviewPage({
     <div className="flex flex-col gap-8">
       <FeatureUsageBeacon feature="analytics_dashboard" clinicId={clinicId} />
       <div className="flex animate-in flex-col gap-4 fade-in slide-in-from-bottom-1 duration-500 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {greeting(now, t)}
-            {firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {today} · {membership.clinicName}
-          </p>
+        <div className="flex flex-col gap-5">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {greeting(now, t)}
+              {firstName ? `, ${firstName}` : ""} <span aria-hidden="true">👋</span>
+            </h1>
+            <p className="mt-1.5 text-sm font-medium text-muted-foreground/90">
+              {today} · {membership.clinicName}
+            </p>
+          </div>
+          <Suspense fallback={<GreetingStatusSkeleton />}>
+            <GreetingStatus clinicId={clinicId} />
+          </Suspense>
         </div>
         <Suspense fallback={<QuickActionsSkeleton />}>
           <QuickActions clinicId={clinicId} />
         </Suspense>
       </div>
 
-      <section aria-label={t.dashboard.overviewSectionLabel} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+      <section
+        aria-label={t.dashboard.overviewSectionLabel}
+        style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
+        className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+      >
         <Suspense fallback={<ClinicStatsSkeleton />}>
           <ClinicStats clinicId={clinicId} />
         </Suspense>
       </section>
 
-      <section aria-label={t.dashboard.aiPerformanceSectionLabel} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+      <section
+        aria-label={t.dashboard.aiPerformanceSectionLabel}
+        style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+        className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+      >
         <Suspense fallback={<AIPerformanceStatsSkeleton />}>
           <AIPerformanceStats clinicId={clinicId} role={membership.role} />
         </Suspense>
       </section>
 
-      <div className="grid animate-in grid-cols-1 gap-6 fade-in slide-in-from-bottom-1 duration-500 lg:grid-cols-3">
+      <div
+        style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
+        className="grid animate-in grid-cols-1 gap-6 fade-in slide-in-from-bottom-1 duration-500 lg:grid-cols-3"
+      >
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Suspense fallback={<AppointmentTimelineSkeleton />}>
             <AppointmentTimeline clinicId={clinicId} />
+          </Suspense>
+          <Suspense fallback={<RevenueChartSkeleton />}>
+            <RevenueChart clinicId={clinicId} />
           </Suspense>
           <Suspense fallback={<AIActivityFeedSkeleton />}>
             <AIActivityFeed clinicId={clinicId} />

@@ -1,11 +1,10 @@
 "use client";
 
-import { Menu, ShieldIcon } from "lucide-react";
+import { ChevronDown, Menu, ShieldIcon } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationBell } from "@/components/clinic/notification-bell";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,8 +48,8 @@ export function ClinicHeader({
   const t = useTranslations();
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-foreground/8 bg-foreground/[0.03] px-4 shadow-[0_1px_2px_0_rgba(0,0,0,0.03),0_12px_32px_-20px_rgba(0,0,0,0.18)] backdrop-blur-2xl sm:px-6 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)_inset,0_20px_50px_-28px_rgba(0,0,0,0.7)]">
+      <div className="flex min-w-0 items-center gap-2.5">
         <Button
           type="button"
           variant="ghost"
@@ -61,24 +60,37 @@ export function ClinicHeader({
         >
           <Menu />
         </Button>
-        <span className="truncate font-medium">{clinicName}</span>
-        <Badge variant="secondary" className="shrink-0 capitalize">
+        <span className="truncate text-sm font-medium text-foreground">{clinicName}</span>
+        <Badge variant="outline" className="shrink-0 gap-1 border-foreground/15 bg-foreground/5 capitalize text-muted-foreground">
           {role}
         </Badge>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
         <NotificationBell clinicId={clinicId} items={notifications} unreadCount={unreadNotificationCount} />
-        <ThemeToggle />
         <LanguageSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" className="hidden items-center gap-2 sm:flex" />}
+            render={
+              <Button
+                variant="ghost"
+                className="hidden h-auto items-center gap-2 rounded-full border border-foreground/8 bg-foreground/[0.03] py-1 pe-2 ps-1.5 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.06] sm:flex"
+              />
+            }
           >
-            <Avatar size="sm">
-              <AvatarFallback>{initials(userDisplayName)}</AvatarFallback>
+            <Avatar size="sm" className="ring-1 ring-foreground/10">
+              <AvatarFallback className="bg-gradient-to-br from-blue-500/30 to-violet-500/30 text-foreground">
+                {initials(userDisplayName)}
+              </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-muted-foreground">{userDisplayName}</span>
+            <span className="text-sm font-medium text-foreground">{userDisplayName}</span>
+            <Badge
+              variant="outline"
+              className="hidden shrink-0 border-foreground/15 bg-foreground/5 capitalize text-muted-foreground md:inline-flex"
+            >
+              {role}
+            </Badge>
+            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
             <DropdownMenuItem render={<Link href="/account/security" />}>
