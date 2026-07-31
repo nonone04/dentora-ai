@@ -158,3 +158,71 @@ export function buildDemoAppointments(now: Date = new Date()): DemoAppointmentDr
 
   return drafts;
 }
+
+export type DemoKnowledgeBaseFixture = { category: string; question: string; answer: string };
+
+export const DEMO_KNOWLEDGE_BASE: DemoKnowledgeBaseFixture[] = [
+  {
+    category: "Hours",
+    question: "What are your opening hours?",
+    answer: "We're open Monday to Friday, 9:00 AM to 6:00 PM, and Saturday 9:00 AM to 1:00 PM. Closed Sundays and public holidays.",
+  },
+  {
+    category: "Pricing",
+    question: "Do you offer payment plans for expensive treatments?",
+    answer: "Yes, interest-free payment plans are available for treatments over 1,500 MAD, split over up to 3 months. Ask our front desk at checkout.",
+  },
+  {
+    category: "Insurance",
+    question: "Which insurance providers do you work with?",
+    answer: "We accept CNSS, CNOPS, and most major private insurance providers in Morocco. Bring your insurance card to your first visit.",
+  },
+  {
+    category: "Parking",
+    question: "Is parking available at the clinic?",
+    answer: "Yes, free parking is available in the building's underground garage, accessible from Boulevard Zerktouni.",
+  },
+  {
+    category: "Cancellation",
+    question: "What is your cancellation policy?",
+    answer: "Please cancel or reschedule at least 24 hours in advance. Late cancellations may incur a 100 MAD fee.",
+  },
+  {
+    category: "Emergency",
+    question: "What should I do in a dental emergency outside office hours?",
+    answer: "Call our emergency line at +212 522 123 456. For severe trauma or uncontrolled bleeding, go to the nearest hospital emergency room.",
+  },
+];
+
+export type DemoAppointmentDraftFixture = {
+  dentistIndex: number;
+  serviceIndex: number;
+  patientIndex: number;
+  hoursFromNow: number;
+  status: "proposed" | "confirmed" | "rejected" | "expired";
+  notes?: string;
+};
+
+/** A handful of AI-proposed bookings -- some still awaiting staff review, some already resolved -- so the AI Inbox never renders empty on the demo account. */
+export const DEMO_APPOINTMENT_DRAFTS: DemoAppointmentDraftFixture[] = [
+  { dentistIndex: 0, serviceIndex: 1, patientIndex: 3, hoursFromNow: 26, status: "proposed", notes: "Requested via WhatsApp -- prefers afternoon slots." },
+  { dentistIndex: 1, serviceIndex: 0, patientIndex: 9, hoursFromNow: 50, status: "proposed" },
+  { dentistIndex: 2, serviceIndex: 4, patientIndex: 16, hoursFromNow: 74, status: "proposed", notes: "Follow-up after a recent extraction." },
+  { dentistIndex: 0, serviceIndex: 2, patientIndex: 6, hoursFromNow: -30, status: "confirmed" },
+  { dentistIndex: 3, serviceIndex: 5, patientIndex: 20, hoursFromNow: -50, status: "rejected", notes: "Requested slot was no longer available." },
+  { dentistIndex: 1, serviceIndex: 3, patientIndex: 11, hoursFromNow: -80, status: "expired" },
+];
+
+export type DemoEscalatedConversationFixture = {
+  patientIndex: number;
+  channel: "whatsapp" | "web_chat" | "sms";
+  reason: string;
+  hoursAgo: number;
+};
+
+/** Conversations the AI handed off to staff -- populates the AI Inbox's "Escalated" section and the Settings page's conversation log. */
+export const DEMO_ESCALATED_CONVERSATIONS: DemoEscalatedConversationFixture[] = [
+  { patientIndex: 5, channel: "whatsapp", reason: "Patient reports severe pain and swelling, requesting a same-day emergency slot.", hoursAgo: 3 },
+  { patientIndex: 12, channel: "web_chat", reason: "Patient wants to dispute a charge on their last invoice.", hoursAgo: 20 },
+  { patientIndex: 18, channel: "whatsapp", reason: "Insurance coverage question the assistant couldn't answer confidently.", hoursAgo: 44 },
+];

@@ -1,5 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEMO_CLINIC, DEMO_DENTISTS, DEMO_OWNER, DEMO_PATIENTS, DEMO_SERVICES, buildDemoAppointments } from "@/lib/demo/fixtures";
+import {
+  DEMO_APPOINTMENT_DRAFTS,
+  DEMO_CLINIC,
+  DEMO_DENTISTS,
+  DEMO_ESCALATED_CONVERSATIONS,
+  DEMO_KNOWLEDGE_BASE,
+  DEMO_OWNER,
+  DEMO_PATIENTS,
+  DEMO_SERVICES,
+  buildDemoAppointments,
+} from "@/lib/demo/fixtures";
 
 export const DEMO_ACCOUNT_EMAIL = process.env.DEMO_ACCOUNT_EMAIL ?? "demo@dentora.ai";
 export const DEMO_ACCOUNT_PASSWORD = process.env.DEMO_ACCOUNT_PASSWORD ?? "DentoraInteractiveDemo-2026";
@@ -101,6 +111,70 @@ async function seedClinicData(admin: AdminClient, clinicId: string) {
   if (appointments.length > 0) {
     await admin.from("appointments").insert(appointments);
   }
+
+  if (DEMO_KNOWLEDGE_BASE.length > 0) {
+    await admin.from("knowledge_base_entries").insert(
+      DEMO_KNOWLEDGE_BASE.map((entry) => ({
+        clinic_id: clinicId,
+        category: entry.category,
+        question: entry.question,
+        answer: entry.answer,
+      })),
+    );
+  }
+
+  const now = Date.now();
+
+  if (dentistIds.length > 0 && serviceIds.length > 0 && patientIds.length > 0 && DEMO_APPOINTMENT_DRAFTS.length > 0) {
+    const drafts = DEMO_APPOINTMENT_DRAFTS.map((draft) => {
+      const service = DEMO_SERVICES[draft.serviceIndex % DEMO_SERVICES.length];
+      const start = new Date(now + draft.hoursFromNow * 60 * 60 * 1000);
+      const end = new Date(start.getTime() + service.durationMinutes * 60 * 1000);
+      return {
+        clinic_id: clinicId,
+        patient_id: patientIds[draft.patientIndex % patientIds.length],
+        dentist_id: dentistIds[draft.dentistIndex % dentistIds.length],
+        service_id: serviceIds[draft.serviceIndex % serviceIds.length],
+        proposed_start_at: start.toISOString(),
+        proposed_end_at: end.toISOString(),
+        status: draft.status,
+        notes: draft.notes ?? null,
+      };
+    });
+    await admin.from("appointment_drafts").insert(drafts);
+  }
+
+  if (patientIds.length > 0 && DEMO_ESCALATED_CONVERSATIONS.length > 0) {
+    const { data: conversations } = await admin
+      .from("ai_conversations")
+      .insert(
+        DEMO_ESCALATED_CONVERSATIONS.map((conversation) => {
+          const updatedAt = new Date(now - conversation.hoursAgo * 60 * 60 * 1000).toISOString();
+          return {
+            clinic_id: clinicId,
+            patient_id: patientIds[conversation.patientIndex % patientIds.length],
+            channel: conversation.channel,
+            status: "escalated" as const,
+            started_at: updatedAt,
+            updated_at: updatedAt,
+          };
+        }),
+      )
+      .select("id");
+
+    const conversationIds = (conversations ?? []).map((c) => c.id);
+    if (conversationIds.length > 0) {
+      await admin.from("ai_messages").insert(
+        DEMO_ESCALATED_CONVERSATIONS.map((conversation, index) => ({
+          conversation_id: conversationIds[index],
+          role: "assistant" as const,
+          content: "I'm escalating this conversation to the clinic staff.",
+          ai_action: "escalate_to_staff",
+          metadata: { input: { reason: conversation.reason } },
+        })),
+      );
+    }
+  }
 }
 
 /** Idempotent: returns the existing demo clinic id if already provisioned, otherwise creates + seeds it. */
@@ -156,6 +230,11 @@ export async function resetDemoClinicData(clinicId: string): Promise<void> {
     throw new Error("Not a demo clinic");
   }
 
+  // appointment_drafts.dentist_id is ON DELETE RESTRICT, and ai_conversations
+  // cascades ai_messages -- both must go before appointments/patients/dentists/services.
+  await admin.from("appointment_drafts").delete().eq("clinic_id", clinicId);
+  await admin.from("ai_conversations").delete().eq("clinic_id", clinicId);
+  await admin.from("knowledge_base_entries").delete().eq("clinic_id", clinicId);
   await admin.from("appointments").delete().eq("clinic_id", clinicId);
   await admin.from("patients").delete().eq("clinic_id", clinicId);
   await admin.from("dentists").delete().eq("clinic_id", clinicId);

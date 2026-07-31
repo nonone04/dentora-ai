@@ -94,7 +94,7 @@ export function HeroSection() {
 
           <Reveal delay={950} className="relative mx-auto mt-16 max-w-5xl">
             <TiltFrame>
-              <ProductFrame src="/marketing/screenshots/dashboard.jpg" alt={t.marketing.home.heroScreenshotAlt} priority premium className="mx-auto" />
+              <ProductFrame src="/screenshots/dashboard-overview.webp" alt={t.marketing.home.heroScreenshotAlt} priority premium className="mx-auto" />
             </TiltFrame>
 
             <ParallaxLayer strength={6} className="absolute -start-6 top-10 hidden w-52 sm:block">

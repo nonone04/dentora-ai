@@ -30,7 +30,10 @@ export function DemoBanner({ clinicId }: { clinicId: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-primary/10 px-4 py-2 text-sm sm:px-6">
+    <div
+      data-demo-banner
+      className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-primary/10 px-4 py-2 text-sm sm:px-6"
+    >
       <div className="flex items-center gap-2">
         <InfoIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
         <span>{t.demo.banner.message}</span>
@@ -42,6 +45,7 @@ export function DemoBanner({ clinicId }: { clinicId: string }) {
           variant="outline"
           size="sm"
           className="gap-1.5"
+          data-testid="demo-reset-trigger"
           onClick={() => {
             setError(null);
             setConfirmOpen(true);
