@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, ChevronRight, Menu, MonitorPlay, Sparkles, Tag, X, type LucideIcon } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/marketing/logo";
@@ -57,10 +57,10 @@ export function MarketingHeader() {
   const isSolid = isScrolled || menuOpen;
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  const links = [
-    { href: "/#features", label: t.marketing.nav.features },
-    { href: "/pricing", label: t.marketing.nav.pricing },
-    { href: "/demo", label: t.marketing.nav.demo },
+  const links: { href: string; label: string; icon: LucideIcon }[] = [
+    { href: "/#features", label: t.marketing.nav.features, icon: Sparkles },
+    { href: "/pricing", label: t.marketing.nav.pricing, icon: Tag },
+    { href: "/demo", label: t.marketing.nav.demo, icon: MonitorPlay },
   ];
 
   // Locks background scroll while the drawer is open, and marks it `inert`
@@ -174,11 +174,11 @@ export function MarketingHeader() {
           menuOpen ? "translate-x-0" : "translate-x-full rtl:-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center justify-between px-5">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5 dark:border-white/5">
           <Logo size="sm" />
           <button
             type="button"
-            className="flex size-11 items-center justify-center rounded-lg text-slate-600 dark:text-slate-300"
+            className="flex size-11 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label={t.marketing.nav.closeMenu}
             onClick={() => setMenuOpen(false)}
           >
@@ -186,21 +186,35 @@ export function MarketingHeader() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1 px-3 pt-2">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="flex min-h-12 items-center rounded-xl px-3 text-lg font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-white"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 pt-5">
+          {links.map((link, index) => {
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                style={{ transitionDelay: menuOpen ? `${80 + index * 60}ms` : "0ms" }}
+                className={cn(
+                  "group flex min-h-14 items-center gap-3 rounded-2xl px-3.5 text-base font-semibold text-slate-700 transition-all duration-300 ease-out motion-reduce:transition-none hover:bg-slate-50 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-white",
+                  menuOpen ? "translate-x-0 opacity-100" : "translate-x-3 opacity-0 rtl:-translate-x-3",
+                )}
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-teal-50 text-blue-600 transition-colors group-hover:from-blue-100 group-hover:to-teal-100 dark:from-blue-400/10 dark:to-teal-400/10 dark:text-blue-400">
+                  <Icon className="size-4.5" aria-hidden="true" />
+                </span>
+                {link.label}
+                <ChevronRight
+                  className="ms-auto size-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 dark:text-slate-600 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-4 border-t border-slate-200/70 p-5 dark:border-white/10">
-          <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-col gap-4 border-t border-slate-100 p-5 dark:border-white/5">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 p-1.5 dark:border-white/5 dark:bg-white/[0.03]">
             <LanguageSwitcher variant="labelled" />
             <ThemeToggle variant="labelled" />
           </div>
@@ -208,7 +222,7 @@ export function MarketingHeader() {
             <Link
               href="/login"
               onClick={() => setMenuOpen(false)}
-              className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 dark:border-white/10 dark:text-slate-200"
+              className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
             >
               {t.marketing.nav.login}
             </Link>

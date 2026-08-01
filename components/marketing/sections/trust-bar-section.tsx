@@ -17,7 +17,7 @@ export function TrustBarSection() {
           <p className="text-center text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-500">
             {t.marketing.home.trustBar.label}
           </p>
-          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 md:mt-6 md:grid-cols-4 md:gap-6">
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-6 md:grid-cols-4 md:gap-6">
             {items.map((item, index) => {
               const Icon = ICONS[index % ICONS.length];
               return (

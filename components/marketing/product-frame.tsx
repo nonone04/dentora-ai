@@ -17,7 +17,6 @@ export function ProductFrame({
   priority,
   address = "app.dentora.ai",
   premium = false,
-  mobileObjectPosition = "right top",
 }: {
   src: string;
   alt: string;
@@ -25,16 +24,6 @@ export function ProductFrame({
   priority?: boolean;
   address?: string;
   premium?: boolean;
-  /**
-   * CSS `object-position` for the below-`sm` cropped variant, e.g. "20% 35%"
-   * or "center top" -- lets each caller pick which region of the same
-   * screenshot reads as the "zoomed in" mobile crop (the product showcase
-   * carousel gives every feature its own deliberate crop) without needing
-   * separate cropped image assets. Passed as an inline style, not a
-   * Tailwind class, since arbitrary/dynamic `object-[...]` strings aren't
-   * statically discoverable by Tailwind's compiler.
-   */
-  mobileObjectPosition?: string;
 }) {
   const frame = (
     <div
@@ -56,24 +45,15 @@ export function ProductFrame({
         </span>
       </div>
       {/*
-       * Below `sm`, the full 1568px-wide screenshot (sidebar + main panel) shrunk to a
-       * ~360px phone width renders every label and number too small to read -- so on
-       * mobile we instead show a cropped, zoomed-in `fill` variant that drops the left
-       * sidebar and focuses on the main content panel, which stays legible at phone
-       * width. `sm:` and up keep the original full-frame image unchanged.
+       * Always the full, uncropped screenshot at every breakpoint -- scaled by
+       * width/height, never `object-cover` fill-cropped -- so the image keeps
+       * its real aspect ratio and nothing is stretched or squeezed on phones.
+       * `sizes` matches this frame's actual rendered width (hero: up to
+       * ~640px; feature-showcase's 2-col grid: ~560px; mobile stack: full
+       * viewport width) -- without it Next.js can't tell the image scales
+       * down from its 1568px intrinsic width and ships that size to every
+       * device.
        */}
-      <div className="relative aspect-[4/3] overflow-hidden sm:hidden">
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          priority={priority}
-          sizes="100vw"
-          className="object-cover"
-          style={{ objectPosition: mobileObjectPosition }}
-        />
-      </div>
-      {/* `sizes` matches this frame's actual rendered width (hero: up to ~640px; feature-showcase's 2-col grid: ~560px) -- without it Next.js can't tell the image scales down from its 1568px intrinsic width and ships that size to every device. */}
       <Image
         src={src}
         alt={alt}
@@ -81,7 +61,7 @@ export function ProductFrame({
         height={762}
         priority={priority}
         sizes="(min-width: 1280px) 640px, (min-width: 1024px) 560px, 100vw"
-        className="hidden h-auto w-full sm:block"
+        className="h-auto w-full"
       />
     </div>
   );

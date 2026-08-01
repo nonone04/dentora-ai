@@ -165,9 +165,9 @@ export function PricingContent() {
         </div>
       </section>
 
-      <section className="relative bg-white pt-12 pb-16 dark:bg-slate-950">
+      <section className="relative bg-white pt-12 pb-16 max-md:pb-20 dark:bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-start gap-6 lg:grid-cols-3 lg:gap-8">
+          <div className="grid items-start gap-6 max-md:gap-8 lg:grid-cols-3 lg:gap-8">
             {plans.map((plan, index) => {
               const isPopular = index === 1;
               const isCustom = !plan.yearlyBilledTotal;
@@ -285,7 +285,7 @@ export function PricingContent() {
 
                     {(() => {
                       const ctaClassName = cn(
-                        "mt-8 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold",
+                        "mt-8 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold max-md:min-h-12 max-md:w-full max-md:rounded-xl max-md:py-3.5 max-md:text-[15px]",
                         isPopular
                           ? cn("bg-gradient-to-r from-blue-600 to-teal-500 text-white", ctaGlowClass)
                           : cn(

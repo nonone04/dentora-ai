@@ -82,7 +82,7 @@ export function ClinicSidebar({
         open && "translate-x-0 rtl:translate-x-0",
       )}
     >
-      <div className="flex h-full flex-col gap-6 rounded-3xl border bg-foreground/[0.03] p-3.5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:shadow-[0_8px_40px_-16px_rgba(0,0,0,0.6)]">
+      <div className="flex h-full flex-col gap-6 rounded-3xl border border-slate-200/70 bg-white/90 p-3.5 shadow-[0_20px_50px_-22px_rgba(15,23,42,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-foreground/[0.03] dark:shadow-[0_8px_40px_-16px_rgba(0,0,0,0.6)] dark:backdrop-blur-xl">
         <Link href={base} className="flex items-center gap-2.5 px-1.5 pt-1">
           <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/25">
             <Stethoscope className="size-4.5" aria-hidden="true" />
@@ -103,22 +103,24 @@ export function ClinicSidebar({
                 onClick={onNavigate}
                 data-tour={item.tourId}
                 className={cn(
-                  "relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150",
-                  isActive ? "text-foreground" : "hover:bg-foreground/[0.04] hover:text-foreground",
+                  "relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150",
+                  isActive
+                    ? "text-blue-700 dark:text-foreground"
+                    : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-muted-foreground dark:hover:bg-foreground/[0.04] dark:hover:text-foreground",
                 )}
               >
                 {isActive &&
                   (shouldReduceMotion ? (
-                    <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/15 via-violet-500/10 to-transparent ring-1 ring-inset ring-blue-400/25" />
+                    <span className="absolute inset-0 rounded-xl bg-blue-50 ring-1 ring-inset ring-blue-200/80 dark:bg-gradient-to-r dark:from-blue-500/15 dark:via-violet-500/10 dark:to-transparent dark:ring-blue-400/25" />
                   ) : (
                     <motion.span
                       layoutId="sidebar-active"
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/15 via-violet-500/10 to-transparent ring-1 ring-inset ring-blue-400/25"
+                      className="absolute inset-0 rounded-xl bg-blue-50 ring-1 ring-inset ring-blue-200/80 dark:bg-gradient-to-r dark:from-blue-500/15 dark:via-violet-500/10 dark:to-transparent dark:ring-blue-400/25"
                       transition={{ type: "spring", stiffness: 420, damping: 38 }}
                     />
                   ))}
                 {isActive && (
-                  <span className="absolute inset-y-1.5 start-0 w-[3px] rounded-full bg-gradient-to-b from-blue-400 to-violet-400 shadow-[0_0_10px_2px_rgba(96,165,250,0.55)]" />
+                  <span className="absolute inset-y-1.5 start-0 w-[3px] rounded-full bg-blue-600 dark:bg-gradient-to-b dark:from-blue-400 dark:to-violet-400 dark:shadow-[0_0_10px_2px_rgba(96,165,250,0.55)]" />
                 )}
                 <Icon className="relative z-10 size-4 shrink-0" aria-hidden="true" />
                 <span className="relative z-10 truncate">{item.label(t)}</span>
@@ -127,7 +129,7 @@ export function ClinicSidebar({
           })}
         </div>
 
-        <div className="flex items-center gap-2.5 rounded-xl border bg-foreground/[0.02] px-2.5 py-2.5">
+        <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/70 bg-slate-50 px-2.5 py-2.5 dark:border-white/10 dark:bg-foreground/[0.02]">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/25 to-violet-500/25 text-[11px] font-semibold uppercase text-foreground ring-1 ring-foreground/10">
             {initials(clinicName) || clinicName.slice(0, 2).toUpperCase()}
           </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, type LucideIcon } from "lucide-react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
@@ -152,70 +152,45 @@ export type MobileShowcaseItem = {
   screenshot: string;
   alt: string;
   address: string;
-  /** CSS `object-position` picking which region of the shared desktop screenshot reads as this feature's "zoomed in" mobile crop -- see ProductFrame's `mobileObjectPosition`. */
-  mobileObjectPosition: string;
 };
 
 /**
- * Mobile-only "one feature at a time" carousel -- replaces the desktop
- * alternating text/screenshot stack with a horizontal snap-scroll of
- * self-contained cards, each showing a deliberately cropped/zoomed region
- * of that feature's screenshot (never the full desktop frame shrunk down).
- * Progress dots track the centered card via IntersectionObserver rather
- * than a scroll-position calculation, so it stays correct regardless of
- * card width/gap tuning.
+ * Mobile-only vertical stack -- one full-width premium card per feature,
+ * flowing top to bottom (replaces the old horizontal snap-scroll carousel,
+ * which read as a bad mobile-web pattern and hid most features off-screen).
+ * Each card leads with the screenshot as its hero element, shown at full
+ * width via `ProductFrame` (uncropped, real aspect ratio, never squeezed).
  */
-export function MobileFeatureCarousel({ items }: { items: MobileShowcaseItem[] }) {
+export function MobileFeatureStack({ items }: { items: MobileShowcaseItem[] }) {
   const t = useTranslations();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const cards = Array.from(container.children) as HTMLElement[];
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const mostVisible = entries.reduce(
-          (best, entry) => (entry.intersectionRatio > best.intersectionRatio ? entry : best),
-          entries[0],
-        );
-        if (mostVisible && mostVisible.intersectionRatio > 0) {
-          const index = cards.indexOf(mostVisible.target as HTMLElement);
-          if (index !== -1) setActiveIndex(index);
-        }
-      },
-      { root: container, threshold: [0.5, 0.75, 1] },
-    );
-
-    cards.forEach((card) => observer.observe(card));
-    return () => observer.disconnect();
-  }, [items.length]);
 
   return (
-    <div>
-      <div ref={containerRef} className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1">
-        {items.map((item) => (
-          <div key={item.key} className="w-[86%] shrink-0 snap-center">
-            <div className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900">
-              <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">{item.eyebrow}</span>
-              <h3 className="mt-1.5 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">{item.title}</h3>
+    <div className="flex flex-col gap-8">
+      {items.map((item, index) => (
+        <Reveal key={item.key} delay={index === 0 ? 0 : 60}>
+          <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.25)] dark:border-white/10 dark:bg-slate-900 dark:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]">
+            <div className="p-6 pb-5">
+              <span className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 dark:bg-teal-400/10 dark:text-teal-300">
+                {item.eyebrow}
+              </span>
+              <h3 className="mt-4 text-balance text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{item.title}</h3>
+            </div>
 
-              <div className="relative mt-4">
-                <ProductFrame
-                  src={item.screenshot}
-                  alt={item.alt}
-                  address={item.address}
-                  mobileObjectPosition={item.mobileObjectPosition}
-                />
+            <div className="px-5">
+              <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-slate-100 to-slate-50 p-3 dark:from-white/[0.05] dark:to-white/[0.02]">
+                <ProductFrame src={item.screenshot} alt={item.alt} address={item.address} />
               </div>
+            </div>
 
-              <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.description}</p>
-              <ul className="mt-4 flex flex-col gap-2">
+            <div className="p-6 pt-5">
+              <p className="text-balance leading-relaxed text-slate-600 dark:text-slate-300">{item.description}</p>
+
+              <ul className="mt-5 flex flex-col gap-3">
                 {item.bullets.map((bullet) => (
-                  <li key={bullet} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                    <Check className="mt-0.5 size-4 shrink-0 text-teal-600 dark:text-teal-400" aria-hidden="true" />
+                  <li key={bullet} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-600 dark:bg-teal-400/10 dark:text-teal-400">
+                      <Check className="size-3" aria-hidden="true" />
+                    </span>
                     {bullet}
                   </li>
                 ))}
@@ -224,7 +199,7 @@ export function MobileFeatureCarousel({ items }: { items: MobileShowcaseItem[] }
               <Link
                 href="/login"
                 className={cn(
-                  "mt-5 inline-flex min-h-12 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white",
+                  "mt-6 flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-5 text-[15px] font-semibold text-white",
                   ctaGlowClass,
                 )}
               >
@@ -233,20 +208,8 @@ export function MobileFeatureCarousel({ items }: { items: MobileShowcaseItem[] }
               </Link>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-4 flex items-center justify-center gap-1.5" aria-hidden="true">
-        {items.map((item, index) => (
-          <span
-            key={item.key}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              index === activeIndex ? "w-5 bg-blue-600 dark:bg-blue-400" : "w-1.5 bg-slate-200 dark:bg-white/15",
-            )}
-          />
-        ))}
-      </div>
+        </Reveal>
+      ))}
     </div>
   );
 }

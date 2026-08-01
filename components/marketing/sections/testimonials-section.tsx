@@ -26,20 +26,22 @@ export function TestimonialsSection() {
   const { eyebrow, title, caseStudy } = t.marketing.home.testimonials;
 
   return (
-    <section className="defer-offscreen relative overflow-hidden bg-white py-16 dark:bg-slate-950 md:py-24">
+    <section className="defer-offscreen relative overflow-hidden bg-white py-20 dark:bg-slate-950 md:py-24">
       <SectionBackground intensity="subtle" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Reveal className="mx-auto mb-10 max-w-2xl text-center md:mb-16">
+        <Reveal className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
             <Sparkles className="size-3.5" aria-hidden="true" />
             {eyebrow}
           </span>
-          <h2 className="mt-4 text-balance text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-white">{title}</h2>
+          <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight text-slate-900 md:text-4xl md:font-semibold dark:text-white">
+            {title}
+          </h2>
         </Reveal>
 
         <Reveal variant="scale" className="mx-auto max-w-4xl">
           <figure className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xl shadow-slate-900/5 dark:border-white/10 dark:bg-slate-900">
-            <div className="p-6 md:p-10">
+            <div className="p-7 md:p-10">
               <Quote className="size-7 text-blue-200 md:size-8 dark:text-blue-500/30" aria-hidden="true" />
               <blockquote className="mt-4 text-balance text-base leading-relaxed text-slate-700 md:mt-5 md:text-lg dark:text-slate-200">
                 {caseStudy.quote}

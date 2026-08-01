@@ -3,7 +3,7 @@
 import { CalendarCheck2, MessagesSquare, ShieldCheck, TrendingUp, UserRound, UsersRound } from "lucide-react";
 import {
   FeatureShowcase,
-  MobileFeatureCarousel,
+  MobileFeatureStack,
   type FloatingBadgeConfig,
 } from "@/components/marketing/sections/feature-showcase-section";
 import { Reveal } from "@/components/marketing/motion/reveal";
@@ -25,12 +25,6 @@ export function ShowcaseSections() {
     address: string;
     badge: FloatingBadgeConfig;
     secondaryCta: string;
-    // Every screenshot is a full app capture with a left sidebar + main
-    // content panel (see ProductFrame's mobile-crop comment) -- each crop
-    // below leans toward the right-hand main panel, varying the vertical
-    // anchor per feature to bring that feature's most legible region
-    // (conversation list, week grid, top summary cards, etc.) into frame.
-    mobileObjectPosition: string;
   }[] = [
     {
       key: "ai",
@@ -43,7 +37,6 @@ export function ShowcaseSections() {
       address: "app.dentora.ai/ai-inbox",
       badge: { icon: MessagesSquare, value: s.ai.badgeValue, label: s.ai.badgeLabel, position: "top" },
       secondaryCta: s.ai.secondaryCta,
-      mobileObjectPosition: "85% 20%",
     },
     {
       key: "calendar",
@@ -56,7 +49,6 @@ export function ShowcaseSections() {
       address: "app.dentora.ai/calendar",
       badge: { icon: CalendarCheck2, value: s.calendar.badgeValue, label: s.calendar.badgeLabel, position: "top" },
       secondaryCta: s.calendar.secondaryCta,
-      mobileObjectPosition: "80% 50%",
     },
     {
       key: "patient360",
@@ -69,7 +61,6 @@ export function ShowcaseSections() {
       address: "app.dentora.ai/patients",
       badge: { icon: UserRound, value: s.patient360.badgeValue, label: s.patient360.badgeLabel, position: "bottom" },
       secondaryCta: s.patient360.secondaryCta,
-      mobileObjectPosition: "85% 15%",
     },
     {
       key: "analytics",
@@ -82,7 +73,6 @@ export function ShowcaseSections() {
       address: "app.dentora.ai",
       badge: { icon: TrendingUp, value: s.analytics.badgeValue, label: s.analytics.badgeLabel, position: "bottom" },
       secondaryCta: s.analytics.secondaryCta,
-      mobileObjectPosition: "75% 25%",
     },
     {
       key: "staff",
@@ -95,7 +85,6 @@ export function ShowcaseSections() {
       address: "app.dentora.ai/staff",
       badge: { icon: UsersRound, value: s.staff.badgeValue, label: s.staff.badgeLabel, position: "top" },
       secondaryCta: s.staff.secondaryCta,
-      mobileObjectPosition: "85% 30%",
     },
     {
       key: "security",
@@ -108,19 +97,20 @@ export function ShowcaseSections() {
       address: "app.dentora.ai/settings",
       badge: { icon: ShieldCheck, value: s.security.badgeValue, label: s.security.badgeLabel, position: "bottom" },
       secondaryCta: s.security.secondaryCta,
-      mobileObjectPosition: "80% 40%",
     },
   ];
 
   return (
-    <section id="features" className="defer-offscreen relative overflow-hidden bg-white py-16 dark:bg-slate-950 md:py-24">
+    <section id="features" className="defer-offscreen relative overflow-hidden bg-white py-20 dark:bg-slate-950 md:py-24">
       <SectionBackground intensity="subtle" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Reveal className="mx-auto mb-10 max-w-2xl text-center md:mb-20">
-          <h2 className="text-balance text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-white">
+        <Reveal className="mx-auto mb-12 max-w-2xl text-center md:mb-20">
+          <h2 className="text-balance text-3xl font-bold tracking-tight text-slate-900 md:text-4xl md:font-semibold dark:text-white">
             {s.title}
           </h2>
-          <p className="mt-3 text-balance text-base text-slate-600 md:mt-4 md:text-lg dark:text-slate-300">{s.subtitle}</p>
+          <p className="mt-4 text-balance text-base text-slate-600 md:mt-4 md:text-lg dark:text-slate-300">
+            {s.subtitle}
+          </p>
         </Reveal>
 
         {/* Desktop: alternating text/screenshot stack, unchanged. */}
@@ -142,9 +132,9 @@ export function ShowcaseSections() {
           ))}
         </div>
 
-        {/* Mobile: one feature at a time, snap-scroll carousel. */}
+        {/* Mobile: vertical stack, one full-width premium card per feature. */}
         <div className="md:hidden">
-          <MobileFeatureCarousel
+          <MobileFeatureStack
             items={features.map((feature) => ({
               key: feature.key,
               eyebrow: feature.eyebrow,
@@ -154,7 +144,6 @@ export function ShowcaseSections() {
               screenshot: feature.screenshot,
               alt: feature.alt,
               address: feature.address,
-              mobileObjectPosition: feature.mobileObjectPosition,
             }))}
           />
         </div>
