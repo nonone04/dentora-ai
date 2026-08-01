@@ -2,12 +2,16 @@
 
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isResponseLanguage, type ResponseLanguage } from "@/lib/ai/nlu/language";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { isAccountLocked, recordLoginFailure } from "@/lib/auth/login-lockout";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getSafeNextPath } from "@/lib/auth/safe-redirect";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { validatePassword } from "@/lib/auth/password";
+import { sendTemplatedEmail } from "@/lib/email/send";
+import type { PasswordChangedProps } from "@/lib/email/templates/password-changed";
+import { formatDateTime } from "@/lib/format";
 import { track } from "@/lib/telemetry";
 import { REMEMBER_ME_COOKIE } from "@/lib/supabase/cookie-persistence";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -146,7 +150,11 @@ export async function signUp(
       data: {
         full_name: typeof fullName === "string" && fullName ? fullName : null,
       },
-      emailRedirectTo: `${origin}/auth/confirm?type=signup&next=${encodeURIComponent(next ?? "/")}`,
+      // Plain post-verification destination -- the Send Email Hook
+      // (app/api/auth/send-email-hook/route.ts) builds the actual
+      // /auth/confirm?token_hash=...&type=signup&next=... link from this
+      // path, since it now owns rendering the email entirely.
+      emailRedirectTo: `${origin}${next ?? "/"}`,
     },
   });
 
@@ -218,8 +226,10 @@ export async function requestPasswordReset(
   if (checkRateLimit(`pwreset:${normalizedEmail}`, RESEND_LIMIT, RESEND_WINDOW_MS)) {
     const origin = await getOrigin();
     const supabase = await createClient();
+    // See the signUp comment above -- the Send Email Hook builds the real
+    // token_hash link, this is just the final destination after it.
     await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${origin}/auth/confirm?type=recovery&next=/reset-password`,
+      redirectTo: `${origin}/reset-password`,
     });
 
     const admin = createAdminClient();
@@ -248,7 +258,7 @@ export async function resendVerificationEmail(
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: normalizedEmail,
-    options: { emailRedirectTo: `${origin}/auth/confirm?type=signup&next=/` },
+    options: { emailRedirectTo: `${origin}/` },
   });
 
   if (error) {
@@ -299,7 +309,42 @@ export async function completePasswordReset(
   await logSecurityEvent(admin, { userId: user.id, eventType: "password_reset_completed" });
   await track({ name: "Password Reset", userId: user.id, properties: { stage: "completed" } });
 
+  if (user.email) {
+    await sendPasswordChangedEmail(admin, user);
+  }
+
   redirect("/login?resetSuccess=1");
+}
+
+/** Best-effort security confirmation email -- never blocks the password-reset flow itself. */
+async function sendPasswordChangedEmail(admin: ReturnType<typeof createAdminClient>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) {
+  if (!user.email) return;
+
+  const { data: membership } = await admin
+    .from("clinic_members")
+    .select("clinics(default_language)")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+  const clinicLocale = (membership?.clinics as { default_language?: string } | null)?.default_language;
+  const language: ResponseLanguage = isResponseLanguage(clinicLocale ?? "") ? (clinicLocale as ResponseLanguage) : "en";
+
+  const recipientName =
+    (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+    user.email.split("@")[0];
+  const origin = await getOrigin();
+
+  const props: PasswordChangedProps = {
+    recipientName,
+    changedAtFormatted: formatDateTime(new Date().toISOString(), language),
+    supportUrl: `${origin}/support`,
+  };
+
+  const result = await sendTemplatedEmail("password_changed", user.email, props, language);
+  if (!result.success) {
+    console.error(`[auth] failed to send password_changed email to ${user.email}: ${result.error}`);
+  }
 }
 
 function passwordErrorMessage(

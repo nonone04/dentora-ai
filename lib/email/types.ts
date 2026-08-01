@@ -6,31 +6,39 @@ export const EMAIL_TEMPLATE_IDS = [
   "verify_email",
   "password_reset",
   "password_changed",
+  "magic_login",
   "staff_invitation",
   "invitation_accepted",
   "appointment_confirmation",
   "appointment_reminder",
   "appointment_cancelled",
   "appointment_rescheduled",
+  "payment_receipt",
+  "subscription_activated",
+  "subscription_cancelled",
   "trial_started",
   "trial_ending_7d",
   "trial_ending_1d",
+  "contact_auto_reply",
+  "support_ticket_confirmation",
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
 
 /** Preview/catalog grouping only -- unrelated to the in-app notification categories in lib/notifications/categories.ts. */
-export const EMAIL_CATEGORIES = ["account", "team", "appointments", "billing"] as const;
+export const EMAIL_CATEGORIES = ["account", "team", "appointments", "billing", "support"] as const;
 export type EmailCategory = (typeof EMAIL_CATEGORIES)[number];
 
 /**
- * "wired" = actually sent by app code today (the 4 appointment lifecycle
- * templates, via lib/notifications/email-html.ts). "ready" = built,
- * branded, tested, and previewable, but not called from any send path --
- * either because the triggering feature doesn't exist yet (trial/billing)
- * or because that email is currently owned by Supabase Auth's own
- * built-in system (welcome/verify/reset/invite). See
- * docs/customer-communications.md.
+ * "wired" = actually sent by app code today: the 4 appointment lifecycle
+ * templates (via lib/notifications/email-html.ts), plus Welcome, Verify
+ * Email, Password Reset, Password Changed, Staff Invitation, and
+ * Invitation Accepted (via app/api/auth/send-email-hook/route.ts -- the
+ * Supabase Auth "Send Email" hook -- and direct sendTemplatedEmail calls
+ * in app/actions/{auth,clinics,team}.ts). "ready" = built, branded,
+ * tested, and previewable, but not called from any send path, because the
+ * triggering feature doesn't exist yet (trial/billing/contact
+ * form/support tickets/passwordless auth). See docs/customer-communications.md.
  */
 export type EmailTemplateStatus = "wired" | "ready";
 

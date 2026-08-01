@@ -77,7 +77,7 @@ export const sampleInvitationAcceptedProps: InvitationAcceptedProps = {
 export const invitationAcceptedTemplate: EmailTemplateEntry<InvitationAcceptedProps> = {
   id: "invitation_accepted",
   category: "team",
-  status: "ready",
+  status: "wired",
   sampleProps: sampleInvitationAcceptedProps,
   render,
 };

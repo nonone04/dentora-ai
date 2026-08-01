@@ -18,6 +18,7 @@ const CATEGORY_LABEL: Record<EmailCategory, string> = {
   team: "Team",
   appointments: "Appointments",
   billing: "Billing",
+  support: "Support",
 };
 
 function isEmailTemplateId(value: string | undefined): value is EmailTemplateId {

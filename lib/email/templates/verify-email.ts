@@ -74,7 +74,7 @@ export const sampleVerifyEmailProps: VerifyEmailProps = {
 export const verifyEmailTemplate: EmailTemplateEntry<VerifyEmailProps> = {
   id: "verify_email",
   category: "account",
-  status: "ready",
+  status: "wired",
   sampleProps: sampleVerifyEmailProps,
   render,
 };

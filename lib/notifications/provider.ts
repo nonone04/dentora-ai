@@ -50,8 +50,8 @@ const providers = new Map<NotificationChannel, NotificationProvider>();
 function createProvider(channel: NotificationChannel): NotificationProvider {
   if (channel === "in_app") return new InAppNotificationProvider();
 
-  if (channel === "email" && process.env.RESEND_API_KEY && process.env.NOTIFICATIONS_FROM_EMAIL) {
-    return new ResendEmailProvider(process.env.RESEND_API_KEY, process.env.NOTIFICATIONS_FROM_EMAIL);
+  if (channel === "email" && process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+    return new ResendEmailProvider(process.env.RESEND_API_KEY, process.env.EMAIL_FROM);
   }
 
   if (channel === "whatsapp" && process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {

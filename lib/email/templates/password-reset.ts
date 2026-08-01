@@ -74,7 +74,7 @@ export const samplePasswordResetProps: PasswordResetProps = {
 export const passwordResetTemplate: EmailTemplateEntry<PasswordResetProps> = {
   id: "password_reset",
   category: "account",
-  status: "ready",
+  status: "wired",
   sampleProps: samplePasswordResetProps,
   render,
 };

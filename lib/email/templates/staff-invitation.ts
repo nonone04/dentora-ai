@@ -82,7 +82,7 @@ export const sampleStaffInvitationProps: StaffInvitationProps = {
 export const staffInvitationTemplate: EmailTemplateEntry<StaffInvitationProps> = {
   id: "staff_invitation",
   category: "team",
-  status: "ready",
+  status: "wired",
   sampleProps: sampleStaffInvitationProps,
   render,
 };

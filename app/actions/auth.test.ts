@@ -133,22 +133,25 @@ describe("signIn: success", () => {
 });
 
 describe("signUp", () => {
-  it("wires emailRedirectTo to the auth confirm route", async () => {
+  it("wires emailRedirectTo to the plain post-verification destination", async () => {
     signUpMock.mockResolvedValue({ data: { session: null, user: { id: "user-1" } }, error: null });
     await signUp(undefined, formData({ email: "new@example.com", password: "Str0ngP@ssword123", fullName: "New User" }));
 
+    // Plain path, not a pre-built /auth/confirm URL -- the Send Email Hook
+    // (app/api/auth/send-email-hook/route.ts) now builds the real
+    // token_hash confirm link itself from this destination.
     expect(signUpMock).toHaveBeenCalledWith(
       expect.objectContaining({
         email: "new@example.com",
         options: expect.objectContaining({
-          emailRedirectTo: "https://dentora.test/auth/confirm?type=signup&next=%2F",
+          emailRedirectTo: "https://dentora.test/",
         }),
       }),
     );
     expect(trackMock).toHaveBeenCalledWith(expect.objectContaining({ name: "User Registered", userId: "user-1" }));
   });
 
-  it("carries a pending checkout's `next` field through the confirm-email link", async () => {
+  it("carries a pending checkout's `next` field through emailRedirectTo", async () => {
     signUpMock.mockResolvedValue({ data: { session: null, user: { id: "user-1" } }, error: null });
     await signUp(
       undefined,
@@ -158,7 +161,7 @@ describe("signUp", () => {
     expect(signUpMock).toHaveBeenCalledWith(
       expect.objectContaining({
         options: expect.objectContaining({
-          emailRedirectTo: "https://dentora.test/auth/confirm?type=signup&next=%2Fcheckout%2Fprofessional",
+          emailRedirectTo: "https://dentora.test/checkout/professional",
         }),
       }),
     );

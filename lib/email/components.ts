@@ -46,24 +46,66 @@ export function renderLink(label: string, href: string): string {
   return `<a href="${escapeHtml(href)}" class="eml-link" style="font-family:${emailFontStack};font-size:14px;text-decoration:underline;">${escapeHtml(label)}</a>`;
 }
 
-const FOOTER_COPY: Record<ResponseLanguage, { tagline: string; rights: (year: number) => string }> = {
+const FOOTER_COPY: Record<
+  ResponseLanguage,
+  { tagline: string; rights: (year: number) => string; support: string; website: string; privacy: string; terms: string }
+> = {
   en: {
     tagline: "Dentora — AI-powered front desk software for dental clinics.",
     rights: (year) => `© ${year} Dentora. All rights reserved.`,
+    support: "Support",
+    website: "Website",
+    privacy: "Privacy Policy",
+    terms: "Terms of Service",
   },
   fr: {
     tagline: "Dentora — le logiciel d'accueil propulsé par l'IA pour les cabinets dentaires.",
     rights: (year) => `© ${year} Dentora. Tous droits réservés.`,
+    support: "Assistance",
+    website: "Site web",
+    privacy: "Politique de confidentialité",
+    terms: "Conditions d'utilisation",
   },
   ar: {
     tagline: "Dentora — برنامج استقبال مدعوم بالذكاء الاصطناعي لعيادات الأسنان.",
     rights: (year) => `© ${year} Dentora. جميع الحقوق محفوظة.`,
+    support: "الدعم",
+    website: "الموقع الإلكتروني",
+    privacy: "سياسة الخصوصية",
+    terms: "شروط الخدمة",
   },
 };
 
-/** Consistent footer for every template -- tagline + copyright, both localized. `year` is injectable for deterministic tests. */
+/** Default public site URL / support inbox, used whenever the corresponding env var isn't set (e.g. local dev, tests, the preview page). */
+const DEFAULT_APP_URL = "https://dentora.ai";
+const DEFAULT_SUPPORT_EMAIL = "support@dentora.ai";
+
+function footerLink(label: string, href: string): string {
+  return `<a href="${escapeHtml(href)}" class="eml-link" style="font-family:${emailFontStack};font-size:12px;text-decoration:underline;">${escapeHtml(label)}</a>`;
+}
+
+/**
+ * Consistent footer for every template -- tagline, support/website/legal
+ * links, and copyright, all localized. `year` is injectable for
+ * deterministic tests. Reads EMAIL_SUPPORT / NEXT_PUBLIC_APP_URL directly
+ * (same pattern as lib/notifications/provider.ts reading env at call
+ * time) rather than threading them through every template's props, since
+ * every email shares one footer.
+ */
 export function renderFooter(language: ResponseLanguage, year: number = new Date().getFullYear()): string {
   const copy = FOOTER_COPY[language];
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL).replace(/\/$/, "");
+  const supportEmail = process.env.EMAIL_SUPPORT || DEFAULT_SUPPORT_EMAIL;
+  const websiteLabel = appUrl.replace(/^https?:\/\//, "");
+
+  const links = [
+    footerLink(copy.support, `mailto:${supportEmail}`),
+    footerLink(websiteLabel, appUrl),
+    footerLink(copy.privacy, `${appUrl}/privacy`),
+    footerLink(copy.terms, `${appUrl}/terms`),
+  ].join(`<span class="eml-muted" style="font-family:${emailFontStack};font-size:12px;"> &middot; </span>`);
+
   return `<p class="eml-muted" style="margin:16px 0 4px;font-family:${emailFontStack};font-size:12px;line-height:1.5;">${escapeHtml(copy.tagline)}</p>
+  <p style="margin:0 0 8px;line-height:1.8;">${links}</p>
   <p class="eml-muted" style="margin:0;font-family:${emailFontStack};font-size:12px;line-height:1.5;">${escapeHtml(copy.rights(year))}</p>`;
 }

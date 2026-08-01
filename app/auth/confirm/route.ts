@@ -10,11 +10,14 @@ import { track } from "@/lib/telemetry";
  * the browser that requested them (the code_verifier lives in a cookie
  * there) -- broken for the very common case of opening a reset/verify link
  * from a different device (e.g. a phone's mail app). This route instead
- * verifies via token_hash/OTP, which works from any device. It requires
- * the Supabase Dashboard's "Confirm signup" and "Reset Password" email
- * templates to link here with `token_hash={{ .TokenHash }}` instead of the
- * default `{{ .ConfirmationURL }}` -- a manual, one-time infra change
- * outside this repo.
+ * verifies via token_hash/OTP, which works from any device.
+ *
+ * The link pointing here is built entirely by our own code now, not
+ * Supabase's: app/api/auth/send-email-hook/route.ts (Supabase's "Send
+ * Email" hook) renders our own branded template and constructs this
+ * exact `?token_hash=...&type=...&next=...` URL itself, once that hook is
+ * enabled in Supabase Dashboard > Authentication > Hooks > Send Email --
+ * no Supabase-side email template edit needed.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

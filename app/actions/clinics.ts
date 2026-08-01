@@ -1,14 +1,24 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AI_ACTIONS, type AIActionName } from "@/lib/ai/actions";
+import { sendTemplatedEmail } from "@/lib/email/send";
+import type { WelcomeProps } from "@/lib/email/templates/welcome";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getServerLocale } from "@/lib/i18n/get-locale";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 import { identify, track } from "@/lib/telemetry";
+
+async function getOrigin() {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host");
+  const protocol = host?.startsWith("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
 
 export type CreateClinicFormState = { error?: string } | undefined;
 
@@ -110,6 +120,19 @@ export async function createClinic(
   const locale = await getServerLocale();
   await track({ name: "Clinic Created", userId: user.id, clinicId });
   await identify(user.id, { role: "owner", language: locale });
+
+  if (user.email) {
+    const origin = await getOrigin();
+    const recipientName =
+      (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+      user.email.split("@")[0];
+    const props: WelcomeProps = { recipientName, clinicName: name, dashboardUrl: `${origin}/clinic/${clinicId}` };
+    // Best-effort -- must never block onboarding from completing.
+    const result = await sendTemplatedEmail("welcome", user.email, props, locale);
+    if (!result.success) {
+      console.error(`[clinics] failed to send welcome email to ${user.email}: ${result.error}`);
+    }
+  }
 
   redirect(`/clinic/${clinicId}`);
 }

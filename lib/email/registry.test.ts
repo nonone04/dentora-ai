@@ -17,9 +17,9 @@ function probeValue(sampleProps: unknown): string | null {
 }
 
 describe("EMAIL_TEMPLATES registry", () => {
-  it("contains exactly the 13 declared template ids", () => {
+  it("contains exactly the declared template ids", () => {
     const templates = listEmailTemplates();
-    expect(templates).toHaveLength(13);
+    expect(templates).toHaveLength(EMAIL_TEMPLATE_IDS.length);
     expect(templates.map((t) => t.id).sort()).toEqual([...EMAIL_TEMPLATE_IDS].sort());
   });
 

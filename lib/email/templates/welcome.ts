@@ -81,7 +81,7 @@ export const sampleWelcomeProps: WelcomeProps = {
 export const welcomeTemplate: EmailTemplateEntry<WelcomeProps> = {
   id: "welcome",
   category: "account",
-  status: "ready",
+  status: "wired",
   sampleProps: sampleWelcomeProps,
   render,
 };

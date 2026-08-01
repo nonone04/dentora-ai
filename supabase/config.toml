@@ -285,6 +285,20 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# Send Email hook -- routes every auth email (signup confirmation, password
+# reset, staff invitation) through our own branded Resend templates
+# (app/api/auth/send-email-hook/route.ts) instead of Supabase's built-in
+# emails. For local `supabase start` only; the hosted project's hook is
+# configured separately in Supabase Dashboard > Authentication > Hooks >
+# Send Email (see .env.example's SUPABASE_AUTH_HOOK_SECRET). Uncomment and
+# point `uri` at your local dev server if you need to test this end-to-end
+# against the local stack; remove this block entirely if your installed
+# Supabase CLI version doesn't recognize auth.hook.send_email.
+# [auth.hook.send_email]
+# enabled = true
+# uri = "http://host.docker.internal:3000/api/auth/send-email-hook"
+# secrets = "env(SUPABASE_AUTH_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false

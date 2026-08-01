@@ -77,7 +77,7 @@ export const samplePasswordChangedProps: PasswordChangedProps = {
 export const passwordChangedTemplate: EmailTemplateEntry<PasswordChangedProps> = {
   id: "password_changed",
   category: "account",
-  status: "ready",
+  status: "wired",
   sampleProps: samplePasswordChangedProps,
   render,
 };
