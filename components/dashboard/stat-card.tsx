@@ -4,6 +4,7 @@ import { CountUp } from "@/components/dashboard/count-up";
 import { GlassCard } from "@/components/dashboard/glass-card";
 import { Sparkline } from "@/components/dashboard/sparkline";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 export type StatTone = "default" | "success" | "warning" | "info" | "brand" | "destructive";
@@ -59,6 +60,8 @@ export function StatCard({
   value,
   numericValue,
   valueSuffix,
+  currency,
+  localeTag,
   icon: Icon,
   tone = "default",
   hint,
@@ -70,6 +73,8 @@ export function StatCard({
   value: string;
   numericValue?: number;
   valueSuffix?: string;
+  currency?: CurrencyCode;
+  localeTag?: string;
   icon: LucideIcon;
   tone?: StatTone;
   hint?: string;
@@ -88,7 +93,11 @@ export function StatCard({
       <div className="flex items-end justify-between gap-3 px-(--card-spacing)">
         <div className="min-w-0">
           <div className="text-2xl font-semibold tracking-tight text-balance">
-            {numericValue !== undefined ? <CountUp value={numericValue} suffix={valueSuffix} /> : value}
+            {numericValue !== undefined ? (
+              <CountUp value={numericValue} suffix={valueSuffix} currency={currency} localeTag={localeTag} />
+            ) : (
+              value
+            )}
           </div>
           <div className="mt-0.5 text-sm text-muted-foreground">{label}</div>
           {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}

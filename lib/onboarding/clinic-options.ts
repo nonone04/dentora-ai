@@ -33,3 +33,30 @@ export const TIMEZONE_OPTIONS = [
 ] as const;
 
 export const DEFAULT_CLINIC_TIMEZONE = "Africa/Casablanca";
+
+// Values are literal date-format patterns (not translated) since they're
+// also used directly to render dates via a formatting library -- the
+// label shows the pattern applied to a sample date so it's self-explanatory
+// regardless of UI language.
+export const DATE_FORMAT_OPTIONS = [
+  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (31/12/2026)" },
+  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (12/31/2026)" },
+  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-12-31)" },
+  { value: "DD.MM.YYYY", label: "DD.MM.YYYY (31.12.2026)" },
+] as const;
+
+export const DEFAULT_CLINIC_DATE_FORMAT = "DD/MM/YYYY";
+
+// Curated Intl locale tags used purely for number/currency grouping and
+// decimal conventions -- deliberately decoupled from the UI language
+// (default_language) and from the clinic's own display locale. Label shows
+// a live example so the choice is obvious without knowing Intl locale tags.
+export const NUMBER_FORMAT_OPTIONS = [
+  { value: "fr-FR", label: "1 234,56 (French)" },
+  { value: "en-US", label: "1,234.56 (US)" },
+  { value: "en-GB", label: "1,234.56 (UK)" },
+  { value: "de-DE", label: "1.234,56 (German)" },
+  { value: "ar-MA", label: "1٬234٫56 (Arabic - Morocco)" },
+] as const;
+
+export const DEFAULT_CLINIC_NUMBER_FORMAT = "fr-FR";

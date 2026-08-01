@@ -346,6 +346,22 @@ export const fr = {
       invite: "Inviter un membre",
       manageLink: "Gérer le personnel",
     },
+    regional: {
+      title: "Régional",
+      description: "Pays, devise, langue et formats pour cette clinique.",
+      manageLink: "Gérer les paramètres régionaux",
+      back: "Retour aux paramètres",
+      page: {
+        title: "Paramètres régionaux",
+        description: "Ces paramètres déterminent l'affichage de la devise, des dates et des nombres dans votre tableau de bord.",
+        countryLabel: "Pays",
+        currencyLabel: "Devise",
+        languageLabel: "Langue",
+        timezoneLabel: "Fuseau horaire",
+        dateFormatLabel: "Format de date",
+        numberFormatLabel: "Format des nombres",
+      },
+    },
     whatsappWizard: {
       title: "WhatsApp",
       status: {
@@ -490,6 +506,8 @@ export const fr = {
     createClinicDescriptionWithInvitations: "Ou créez plutôt votre propre clinique.",
     needHelp: "Besoin d'aide ?",
     clinicNameLabel: "Nom de la clinique",
+    businessSettingsTitle: "Paramètres commerciaux",
+    businessSettingsDescription: "Détermine l'affichage des dates, des nombres et des montants dans votre tableau de bord -- modifiable plus tard dans les paramètres.",
     createClinicButton: "✨ Créer ma clinique",
     creatingClinic: "Création de votre clinique...",
     submitHint: "Moins de 30 secondes",
@@ -533,6 +551,13 @@ export const fr = {
       websitePlaceholder: "https://votreclinique.com",
       timezoneLabel: "Fuseau horaire",
       timezoneHelper: "Utilisé pour planifier correctement les rendez-vous et rappels.",
+      countryLabel: "Pays",
+      countryHelper: "Définit une devise par défaut pertinente -- modifiable ci-dessous.",
+      countryPlaceholder: "Sélectionner un pays",
+      currencyLabel: "Devise",
+      currencyHelper: "Utilisée pour les tarifs, les factures et les revenus dans votre tableau de bord.",
+      dateFormatLabel: "Format de date",
+      dateFormatHelper: "Comment les dates s'affichent dans votre tableau de bord.",
       descriptionLabel: "Description de la clinique",
       descriptionHelper: "Un bref aperçu que votre assistant IA peut utiliser pour répondre aux patients.",
       descriptionPlaceholder: "Dites aux patients ce qui distingue votre clinique...",
@@ -715,6 +740,7 @@ export const fr = {
     managersOnlyNotifications:
       "Seuls les propriétaires et administrateurs de la clinique peuvent modifier les paramètres de notification.",
     managersOnlyAI: "Seuls les propriétaires et administrateurs de la clinique peuvent modifier les paramètres IA.",
+    managersOnlyRegional: "Seuls les propriétaires et administrateurs de la clinique peuvent modifier les paramètres régionaux.",
     passwordTooShort: "Le mot de passe doit contenir au moins 8 caractères.",
     passwordTooWeak: "Veuillez choisir un mot de passe plus robuste.",
     passwordCommon: "Ce mot de passe est trop courant. Veuillez en choisir un autre.",
@@ -1476,7 +1502,8 @@ export const fr = {
       subtitle: "Choisissez la formule adaptée à votre clinique. Changez de formule ou annulez à tout moment.",
       popular: "Le plus populaire",
       disclaimer:
-        "Prix affichés en MAD, hors taxes. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
+        "Les prix affichés sont des estimations converties, hors taxes, et sont facturés en MAD au paiement. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
+      customPrice: "Sur devis",
       billingToggle: {
         monthly: "Mensuel",
         yearly: "Annuel",
@@ -1498,11 +1525,6 @@ export const fr = {
         {
           name: "Starter",
           description: "Idéal pour les dentistes indépendants et petites cliniques qui démarrent leur parcours IA.",
-          monthlyPrice: "490 MAD",
-          yearlyOriginalPrice: "5 880 MAD",
-          yearlyBilledTotal: "4 700 MAD",
-          yearlySavings: "1 180 MAD",
-          priceSuffix: "/mois",
           includesLabel: "",
           features: [
             "Réceptionniste IA (appels, chat et WhatsApp)",
@@ -1523,11 +1545,6 @@ export const fr = {
           name: "Professional",
           description:
             "Conçu pour les cliniques en croissance qui veulent une automatisation complète, une meilleure communication patient et des analyses opérationnelles plus poussées.",
-          monthlyPrice: "990 MAD",
-          yearlyOriginalPrice: "11 880 MAD",
-          yearlyBilledTotal: "9 500 MAD",
-          yearlySavings: "2 380 MAD",
-          priceSuffix: "/mois",
           includesLabel: "Tout ce qui est inclus dans Starter, plus :",
           features: [
             "Personnel illimité",
@@ -1552,11 +1569,6 @@ export const fr = {
         {
           name: "Enterprise",
           description: "Conçu pour les groupes dentaires, les DSO et les organisations de santé d'envergure.",
-          monthlyPrice: "Sur devis",
-          yearlyOriginalPrice: "",
-          yearlyBilledTotal: "",
-          yearlySavings: "",
-          priceSuffix: "",
           includesLabel: "Tout ce qui est inclus dans Professional, plus :",
           features: [
             "Sites de clinique illimités",

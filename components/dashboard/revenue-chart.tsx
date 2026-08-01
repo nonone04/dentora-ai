@@ -4,9 +4,10 @@ import { SectionHeader } from "@/components/dashboard/section-header";
 import { CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/currency";
 import { getClinicStatsWithTrends, SPARKLINE_DAYS } from "@/lib/dashboard/trends";
-import { formatPercent } from "@/lib/format";
-import { getServerDictionary, interpolate } from "@/lib/i18n/server";
+import { formatPercent, INTL_LOCALE } from "@/lib/format";
+import { getServerDictionary, getServerLocale, interpolate } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,8 @@ async function loadRevenueTrend(clinicId: string) {
 
 /** 14-day revenue trend, drawn from the same real completed-appointment data as the "This month's revenue" KPI card. */
 export async function RevenueChart({ clinicId }: { clinicId: string }) {
-  const [stats, t] = await Promise.all([loadRevenueTrend(clinicId), getServerDictionary()]);
+  const [stats, t, locale] = await Promise.all([loadRevenueTrend(clinicId), getServerDictionary(), getServerLocale()]);
+  const localeTag = INTL_LOCALE[locale];
 
   if (!stats) {
     return (
@@ -63,7 +65,7 @@ export async function RevenueChart({ clinicId }: { clinicId: string }) {
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <span className="text-2xl font-semibold tracking-tight tabular-nums">
-            {total.toLocaleString(undefined, { maximumFractionDigits: 0 })} {stats.monthRevenue.currency}
+            {formatCurrency(total, stats.monthRevenue.currency, localeTag)}
           </span>
           {trendLabel && (
             <span className={cn("text-xs font-medium", trendColor)}>
@@ -71,7 +73,7 @@ export async function RevenueChart({ clinicId }: { clinicId: string }) {
             </span>
           )}
           <span className="text-xs text-muted-foreground tabular-nums">
-            {t.dashboard.revenueChart.avgPerDayPrefix} {Math.round(avgPerDay).toLocaleString()} {stats.monthRevenue.currency}
+            {t.dashboard.revenueChart.avgPerDayPrefix} {formatCurrency(Math.round(avgPerDay), stats.monthRevenue.currency, localeTag)}
           </span>
         </div>
         <AreaChart values={stats.revenueSparkline} toneClassName="text-blue-400" />

@@ -1,9 +1,10 @@
 import { CalendarCheck2, Stethoscope, Users, Wallet } from "lucide-react";
 import { StatCard, StatCardSkeleton, StatGrid, type StatDelta } from "@/components/dashboard/stat-card";
 import { ErrorState } from "@/components/ui/error-state";
+import { formatCurrency } from "@/lib/currency";
 import { getClinicStatsWithTrends, type Trend } from "@/lib/dashboard/trends";
-import { formatPercent } from "@/lib/format";
-import { getServerDictionary, type Dictionary } from "@/lib/i18n/server";
+import { formatPercent, INTL_LOCALE } from "@/lib/format";
+import { getServerDictionary, getServerLocale, type Dictionary } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export function ClinicStatsSkeleton() {
@@ -35,8 +36,9 @@ async function loadClinicStats(clinicId: string) {
 
 /** Core clinic-operations KPIs -- direct RLS-scoped queries, visible to every clinic role, same tables as the previous Overview page plus real week-over-week trend deltas and 14-day sparklines (see lib/dashboard/trends.ts). */
 export async function ClinicStats({ clinicId }: { clinicId: string }) {
-  const [stats, t] = await Promise.all([loadClinicStats(clinicId), getServerDictionary()]);
+  const [stats, t, locale] = await Promise.all([loadClinicStats(clinicId), getServerDictionary(), getServerLocale()]);
   if (!stats) return <ErrorState title={t.dashboard.clinicStatsError} />;
+  const localeTag = INTL_LOCALE[locale];
 
   return (
     <StatGrid>
@@ -67,9 +69,10 @@ export async function ClinicStats({ clinicId }: { clinicId: string }) {
       />
       <StatCard
         label={t.dashboard.stats.monthRevenue}
-        value={`${stats.monthRevenue.total.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${stats.monthRevenue.currency}`}
+        value={formatCurrency(stats.monthRevenue.total, stats.monthRevenue.currency, localeTag)}
         numericValue={stats.monthRevenue.total}
-        valueSuffix={` ${stats.monthRevenue.currency}`}
+        currency={stats.monthRevenue.currency}
+        localeTag={localeTag}
         icon={Wallet}
         tone="warning"
         delta={formatDelta(stats.revenueTrend, t)}

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { convert, DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/currency";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SPARKLINE_DAYS = 14;
@@ -64,6 +65,14 @@ function servicePrice(row: RevenueRow): number {
   return price == null ? 0 : Number(price);
 }
 
+/** A service can be quoted in a different currency than its clinic (see supabase/migrations/20260801210000_currency_localization.sql) -- converts it to `clinicCurrency` via the static rates in lib/currency so every row in a sum is directly comparable, instead of the previous last-write-wins bug that silently mixed currencies. */
+export function servicePriceInClinicCurrency(row: RevenueRow, clinicCurrency: string): number {
+  const amount = servicePrice(row);
+  const rowCurrency = row.services?.currency;
+  if (!amount || !isCurrencyCode(rowCurrency) || !isCurrencyCode(clinicCurrency)) return amount;
+  return convert(amount, rowCurrency, clinicCurrency);
+}
+
 export type ClinicStatsTrendData = {
   patientCount: number;
   patientTrend: Trend;
@@ -72,7 +81,7 @@ export type ClinicStatsTrendData = {
   todayAppointmentCount: number;
   appointmentTrend: Trend;
   appointmentSparkline: number[];
-  monthRevenue: { total: number; currency: string };
+  monthRevenue: { total: number; currency: CurrencyCode };
   revenueTrend: Trend;
   revenueSparkline: number[];
 };
@@ -101,7 +110,7 @@ export async function getClinicStatsWithTrends(
   const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   const windowStart = new Date(todayEnd.getTime() - SPARKLINE_DAYS * DAY_MS);
 
-  const [{ count: patientCount }, { count: dentistCount }, { data: recentPatients }, { data: windowAppointments }, { data: monthAppointments }] =
+  const [{ count: patientCount }, { count: dentistCount }, { data: recentPatients }, { data: windowAppointments }, { data: monthAppointments }, { data: clinic }] =
     await Promise.all([
       supabase.from("patients").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId),
       supabase.from("dentists").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("is_active", true),
@@ -119,8 +128,10 @@ export async function getClinicStatsWithTrends(
         .eq("status", "completed")
         .gte("start_at", monthStart.toISOString())
         .lt("start_at", monthEnd.toISOString()),
+      supabase.from("clinics").select("currency").eq("id", clinicId).single(),
     ]);
 
+  const clinicCurrency = isCurrencyCode(clinic?.currency) ? clinic.currency : DEFAULT_CURRENCY;
   const patients = (recentPatients ?? []) as { created_at: string }[];
   const appointments = (windowAppointments ?? []) as unknown as { start_at: string; status: string; services: RevenueRow["services"] }[];
   const monthRows = (monthAppointments ?? []) as unknown as RevenueRow[];
@@ -144,17 +155,12 @@ export async function getClinicStatsWithTrends(
   const revenueSparkline = bucketAmountsByDay(
     appointments
       .filter((a) => a.status === "completed")
-      .map((a) => ({ date: a.start_at, amount: servicePrice(a) })),
+      .map((a) => ({ date: a.start_at, amount: servicePriceInClinicCurrency(a, clinicCurrency) })),
     SPARKLINE_DAYS,
     todayEnd,
   );
 
-  let monthRevenueTotal = 0;
-  let currency = "MAD";
-  for (const row of monthRows) {
-    monthRevenueTotal += servicePrice(row);
-    if (row.services?.currency) currency = row.services.currency;
-  }
+  const monthRevenueTotal = monthRows.reduce((sum, row) => sum + servicePriceInClinicCurrency(row, clinicCurrency), 0);
 
   return {
     patientCount: patientCount ?? 0,
@@ -164,7 +170,7 @@ export async function getClinicStatsWithTrends(
     todayAppointmentCount,
     appointmentTrend: trendFromBuckets(appointmentSparkline),
     appointmentSparkline,
-    monthRevenue: { total: monthRevenueTotal, currency },
+    monthRevenue: { total: monthRevenueTotal, currency: clinicCurrency },
     revenueTrend: trendFromBuckets(revenueSparkline),
     revenueSparkline,
   };

@@ -5,16 +5,30 @@ import { ArrowRight, Ban, Check, RotateCcw, ShieldCheck, Sparkles, type LucideIc
 import { cardHoverClass, ctaGlowClass, ctaHoverClass } from "@/components/marketing/motion/interactive-classes";
 import { Reveal } from "@/components/marketing/motion/reveal";
 import { SectionBackground } from "@/components/marketing/motion/section-background";
-import { useTranslations, type Dictionary } from "@/lib/i18n";
+import { INTL_LOCALE } from "@/lib/format";
+import { useLocale, useTranslations, type Dictionary } from "@/lib/i18n";
+import { convert, formatCurrency, useCurrency } from "@/lib/currency";
+import { PLAN_KEYS, PLAN_PRICING, isCustomPricing } from "@/lib/marketing/pricing-plans";
 import { cn } from "@/lib/utils";
 
 const REASSURANCE_ICONS: LucideIcon[] = [RotateCcw, Ban, ShieldCheck];
 
 type Plan = Dictionary["marketing"]["pricing"]["plans"][number];
 
+/** Monthly price for `plan` (by its index into PLAN_KEYS/the plans array) in the visitor's selected currency, or the "Custom" label for Enterprise. Yearly totals aren't shown in this compact preview card -- only pricing-content.tsx (the full /pricing page) needs the monthly/yearly toggle math. */
+function useMonthlyDisplayPrice(index: number, customLabel: string) {
+  const { locale } = useLocale();
+  const { currency } = useCurrency();
+  const pricing = PLAN_PRICING[PLAN_KEYS[index]];
+  if (isCustomPricing(pricing)) return customLabel;
+  return formatCurrency(convert(pricing.monthlyPriceMad, "MAD", currency), currency, INTL_LOCALE[locale]);
+}
+
 /** Shared card body for both the desktop grid and the mobile vertical stack -- only the surrounding container/layout differs between the two. */
-function PlanCard({ plan, isPopular, popularLabel }: { plan: Plan; isPopular: boolean; popularLabel: string }) {
-  const isCustom = !plan.yearlyBilledTotal;
+function PlanCard({ plan, index, isPopular, popularLabel }: { plan: Plan; index: number; isPopular: boolean; popularLabel: string }) {
+  const t = useTranslations();
+  const isCustom = isCustomPricing(PLAN_PRICING[PLAN_KEYS[index]]);
+  const displayPrice = useMonthlyDisplayPrice(index, t.marketing.pricing.customPrice);
 
   return (
     <div
@@ -34,8 +48,8 @@ function PlanCard({ plan, isPopular, popularLabel }: { plan: Plan; isPopular: bo
       <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{plan.name}</p>
       <p className="mt-2 text-balance text-sm text-slate-500 dark:text-slate-400">{plan.description}</p>
       <div className="mt-4 flex items-baseline gap-1">
-        <span className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{plan.monthlyPrice}</span>
-        {!isCustom && plan.priceSuffix && <span className="text-sm text-slate-400 dark:text-slate-500">{plan.priceSuffix}</span>}
+        <span className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{displayPrice}</span>
+        {!isCustom && <span className="text-sm text-slate-400 dark:text-slate-500">{t.marketing.pricing.perMonth}</span>}
       </div>
       <ul className="mt-6 flex flex-1 flex-col gap-2.5">
         {plan.features.slice(0, 3).map((feature) => (
@@ -55,8 +69,10 @@ function PlanCard({ plan, isPopular, popularLabel }: { plan: Plan; isPopular: bo
  * approved desktop 3-up grid above. Full-width, generously padded, with a
  * clearer popular treatment and its own per-card CTA.
  */
-function MobilePlanCard({ plan, isPopular, popularLabel }: { plan: Plan; isPopular: boolean; popularLabel: string }) {
-  const isCustom = !plan.yearlyBilledTotal;
+function MobilePlanCard({ plan, index, isPopular, popularLabel }: { plan: Plan; index: number; isPopular: boolean; popularLabel: string }) {
+  const t = useTranslations();
+  const isCustom = isCustomPricing(PLAN_PRICING[PLAN_KEYS[index]]);
+  const displayPrice = useMonthlyDisplayPrice(index, t.marketing.pricing.customPrice);
 
   return (
     <div
@@ -76,8 +92,8 @@ function MobilePlanCard({ plan, isPopular, popularLabel }: { plan: Plan; isPopul
       <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{plan.name}</p>
       <p className="mt-2 text-balance text-sm leading-relaxed text-slate-500 dark:text-slate-400">{plan.description}</p>
       <div className="mt-5 flex items-baseline gap-1.5">
-        <span className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">{plan.monthlyPrice}</span>
-        {!isCustom && plan.priceSuffix && <span className="text-sm text-slate-400 dark:text-slate-500">{plan.priceSuffix}</span>}
+        <span className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">{displayPrice}</span>
+        {!isCustom && <span className="text-sm text-slate-400 dark:text-slate-500">{t.marketing.pricing.perMonth}</span>}
       </div>
       <ul className="mt-6 flex flex-col gap-3">
         {plan.features.slice(0, 4).map((feature) => (
@@ -127,7 +143,7 @@ export function PricingPreviewSection() {
         <div className="hidden md:grid md:gap-6 lg:grid-cols-3">
           {plans.map((plan, index) => (
             <Reveal key={plan.name} delay={index * 100}>
-              <PlanCard plan={plan} isPopular={index === popularIndex} popularLabel={t.marketing.pricing.popular} />
+              <PlanCard plan={plan} index={index} isPopular={index === popularIndex} popularLabel={t.marketing.pricing.popular} />
             </Reveal>
           ))}
         </div>
@@ -136,7 +152,7 @@ export function PricingPreviewSection() {
         <div className="flex flex-col gap-6 md:hidden">
           {plans.map((plan, index) => (
             <Reveal key={plan.name} delay={index * 80}>
-              <MobilePlanCard plan={plan} isPopular={index === popularIndex} popularLabel={t.marketing.pricing.popular} />
+              <MobilePlanCard plan={plan} index={index} isPopular={index === popularIndex} popularLabel={t.marketing.pricing.popular} />
             </Reveal>
           ))}
         </div>

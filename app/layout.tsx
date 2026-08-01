@@ -4,6 +4,8 @@ import { ThemeProvider } from "next-themes";
 import { getServerLocale } from "@/lib/i18n/server";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { directionForLocale } from "@/lib/i18n/types";
+import { getServerCurrency } from "@/lib/currency/server";
+import { CurrencyProvider } from "@/lib/currency/currency-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +38,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getServerLocale();
+  const [locale, currency] = await Promise.all([getServerLocale(), getServerCurrency()]);
 
   return (
     <html
@@ -47,7 +49,9 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+          <LocaleProvider initialLocale={locale}>
+            <CurrencyProvider initialCurrency={currency}>{children}</CurrencyProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

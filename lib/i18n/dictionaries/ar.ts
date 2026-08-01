@@ -337,6 +337,22 @@ export const ar = {
       invite: "دعوة عضو",
       manageLink: "إدارة الموظفين",
     },
+    regional: {
+      title: "الإعدادات الإقليمية",
+      description: "الدولة والعملة واللغة والتنسيقات الخاصة بهذه العيادة.",
+      manageLink: "إدارة الإعدادات الإقليمية",
+      back: "العودة إلى الإعدادات",
+      page: {
+        title: "الإعدادات الإقليمية",
+        description: "تتحكم هذه الإعدادات في كيفية عرض العملة والتواريخ والأرقام في لوحة التحكم.",
+        countryLabel: "الدولة",
+        currencyLabel: "العملة",
+        languageLabel: "اللغة",
+        timezoneLabel: "المنطقة الزمنية",
+        dateFormatLabel: "تنسيق التاريخ",
+        numberFormatLabel: "تنسيق الأرقام",
+      },
+    },
     whatsappWizard: {
       title: "واتساب",
       status: {
@@ -477,6 +493,8 @@ export const ar = {
     createClinicDescriptionWithInvitations: "أو أنشئ عيادتك الخاصة بدلاً من ذلك.",
     needHelp: "بحاجة إلى مساعدة؟",
     clinicNameLabel: "اسم العيادة",
+    businessSettingsTitle: "إعدادات النشاط التجاري",
+    businessSettingsDescription: "تحدد كيفية عرض التواريخ والأرقام والمبالغ في لوحة التحكم -- يمكنك تغييرها لاحقًا من الإعدادات.",
     createClinicButton: "✨ أنشئ عيادتي",
     creatingClinic: "جارٍ إنشاء عيادتك...",
     submitHint: "يستغرق أقل من 30 ثانية",
@@ -520,6 +538,13 @@ export const ar = {
       websitePlaceholder: "https://yourclinic.com",
       timezoneLabel: "المنطقة الزمنية",
       timezoneHelper: "تُستخدم لجدولة المواعيد والتذكيرات بشكل صحيح.",
+      countryLabel: "الدولة",
+      countryHelper: "تحدد عملة افتراضية مناسبة -- يمكنك تغييرها أدناه.",
+      countryPlaceholder: "اختر دولة",
+      currencyLabel: "العملة",
+      currencyHelper: "تُستخدم للتسعير والفواتير والإيرادات في لوحة التحكم.",
+      dateFormatLabel: "تنسيق التاريخ",
+      dateFormatHelper: "كيفية عرض التواريخ في لوحة التحكم.",
       descriptionLabel: "وصف العيادة",
       descriptionHelper: "نظرة عامة موجزة يمكن لمساعدك الذكي استخدامها للرد على أسئلة المرضى.",
       descriptionPlaceholder: "أخبر المرضى بما يميز عيادتك...",
@@ -700,6 +725,7 @@ export const ar = {
     managersOnlyDentists: "يمكن فقط لمالكي العيادة والمسؤولين إضافة أطباء الأسنان.",
     managersOnlyNotifications: "يمكن فقط لمالكي العيادة والمسؤولين تعديل إعدادات الإشعارات.",
     managersOnlyAI: "يمكن فقط لمالكي العيادة والمسؤولين تعديل إعدادات الذكاء الاصطناعي.",
+    managersOnlyRegional: "يمكن فقط لمالكي العيادة والمسؤولين تعديل الإعدادات الإقليمية.",
     passwordTooShort: "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
     passwordTooWeak: "يرجى اختيار كلمة مرور أقوى.",
     passwordCommon: "كلمة المرور هذه شائعة جدًا. يرجى اختيار كلمة أخرى.",
@@ -1426,7 +1452,8 @@ export const ar = {
       subtitle: "اختر الخطة المناسبة لعيادتك. رقّي، خفّض، أو ألغِ الاشتراك في أي وقت.",
       popular: "الأكثر شيوعاً",
       disclaimer:
-        "الأسعار المعروضة بالدرهم المغربي، غير شاملة الضريبة. تُدفع الفوترة السنوية دفعة واحدة مقدماً. تواصل معنا للتسعير متعدد العيادات أو لخطة Enterprise المخصصة.",
+        "الأسعار المعروضة تقديرات محوّلة، غير شاملة الضريبة، وتُحصَّل بالدرهم المغربي عند الدفع. تُدفع الفوترة السنوية دفعة واحدة مقدماً. تواصل معنا للتسعير متعدد العيادات أو لخطة Enterprise المخصصة.",
+      customPrice: "مخصص",
       billingToggle: {
         monthly: "شهري",
         yearly: "سنوي",
@@ -1442,11 +1469,6 @@ export const ar = {
         {
           name: "Starter",
           description: "مثالية لأطباء الأسنان المستقلين والعيادات الصغيرة التي تبدأ رحلتها مع الذكاء الاصطناعي.",
-          monthlyPrice: "490 درهم",
-          yearlyOriginalPrice: "5,880 درهم",
-          yearlyBilledTotal: "4,700 درهم",
-          yearlySavings: "1,180 درهم",
-          priceSuffix: "/شهرياً",
           includesLabel: "",
           features: [
             "مساعد استقبال بالذكاء الاصطناعي (مكالمات، دردشة وواتساب)",
@@ -1466,11 +1488,6 @@ export const ar = {
         {
           name: "Professional",
           description: "مصممة للعيادات النامية التي تريد أتمتة كاملة وتواصلاً أفضل مع المرضى ورؤى تشغيلية أعمق.",
-          monthlyPrice: "990 درهم",
-          yearlyOriginalPrice: "11,880 درهم",
-          yearlyBilledTotal: "9,500 درهم",
-          yearlySavings: "2,380 درهم",
-          priceSuffix: "/شهرياً",
           includesLabel: "كل ما في Starter، بالإضافة إلى:",
           features: [
             "عدد غير محدود من أعضاء الفريق",
@@ -1495,11 +1512,6 @@ export const ar = {
         {
           name: "Enterprise",
           description: "مصممة لمجموعات طب الأسنان وDSO والمؤسسات الصحية الكبرى.",
-          monthlyPrice: "مخصص",
-          yearlyOriginalPrice: "",
-          yearlyBilledTotal: "",
-          yearlySavings: "",
-          priceSuffix: "",
           includesLabel: "كل ما في Professional، بالإضافة إلى:",
           features: [
             "فروع عيادة غير محدودة",

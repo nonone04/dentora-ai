@@ -2,7 +2,8 @@ import { CsvImportWizard } from "@/components/import/csv-import-wizard";
 import { ServiceDialog } from "@/components/services/service-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { serviceName } from "@/lib/format";
+import { DEFAULT_CURRENCY, formatCurrency, isCurrencyCode } from "@/lib/currency";
+import { serviceName, INTL_LOCALE } from "@/lib/format";
 import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
@@ -28,17 +29,20 @@ export default async function ServicesPage({
   const canManage = membership.role === "owner" || membership.role === "admin";
 
   const supabase = await createClient();
-  const [{ data: servicesData }, t, locale] = await Promise.all([
+  const [{ data: servicesData }, { data: clinic }, t, locale] = await Promise.all([
     supabase
       .from("services")
       .select("id, name_translations, default_duration_minutes, price, currency, is_active")
       .eq("clinic_id", clinicId)
       .order("created_at"),
+    supabase.from("clinics").select("currency").eq("id", clinicId).single(),
     getServerDictionary(),
     getServerLocale(),
   ]);
 
   const services = (servicesData ?? []) as unknown as ServiceRow[];
+  const clinicCurrency = isCurrencyCode(clinic?.currency) ? clinic.currency : DEFAULT_CURRENCY;
+  const localeTag = INTL_LOCALE[locale];
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,7 +54,7 @@ export default async function ServicesPage({
         {canManage && (
           <div className="flex items-center gap-2">
             <CsvImportWizard clinicId={clinicId} entity="services" />
-            <ServiceDialog clinicId={clinicId} triggerLabel={t.services.dialog.newTrigger} />
+            <ServiceDialog clinicId={clinicId} defaultCurrency={clinicCurrency} triggerLabel={t.services.dialog.newTrigger} />
           </div>
         )}
       </div>
@@ -75,7 +79,11 @@ export default async function ServicesPage({
                 <TableCell>
                   {service.default_duration_minutes} {t.services.minutesSuffix}
                 </TableCell>
-                <TableCell>{service.price != null ? `${service.price} ${service.currency}` : t.common.dash}</TableCell>
+                <TableCell>
+                  {service.price != null
+                    ? formatCurrency(Number(service.price), isCurrencyCode(service.currency) ? service.currency : clinicCurrency, localeTag)
+                    : t.common.dash}
+                </TableCell>
                 <TableCell>
                   <Badge variant={service.is_active ? "secondary" : "outline"}>
                     {service.is_active ? t.common.active : t.common.inactive}
@@ -86,6 +94,7 @@ export default async function ServicesPage({
                     <ServiceDialog
                       clinicId={clinicId}
                       service={service}
+                      defaultCurrency={clinicCurrency}
                       triggerLabel={t.services.dialog.editTrigger}
                       triggerVariant="ghost"
                       triggerSize="sm"

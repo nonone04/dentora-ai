@@ -3,6 +3,7 @@ import { renderButton, renderDivider, renderFooter, renderHeading, renderInfoRow
 import { renderEmailShell } from "@/lib/email/layout";
 import type { EmailRenderOptions, EmailRenderResult, EmailTemplateEntry } from "@/lib/email/types";
 import { renderWordmark } from "@/lib/email/wordmark";
+import { formatCurrency } from "@/lib/currency";
 
 /**
  * NOT wired to a real send path -- billing (lib/stripe/) charges a plan
@@ -98,7 +99,10 @@ export const samplePaymentReceiptProps: PaymentReceiptProps = {
   recipientName: "Sarah",
   clinicName: "Bright Smile Dental",
   planName: "Professional",
-  amountFormatted: "$99.00",
+  // amountFormatted is always pre-formatted by the caller via
+  // lib/currency's formatCurrency() using the clinic's own currency --
+  // this sample just demonstrates that instead of hardcoding a symbol.
+  amountFormatted: formatCurrency(990, "MAD", "fr-FR"),
   paymentDateFormatted: "Aug 1, 2026",
   receiptUrl: "https://app.dentora.ai/clinic/demo/settings/billing/receipts/sample",
 };

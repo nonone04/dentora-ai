@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, UsersRound } from "lucide-react";
+import { ArrowRight, Globe2, UsersRound } from "lucide-react";
 import { AISettingsForm } from "@/components/ai/ai-settings-form";
 import { NotificationSettingsForm } from "@/components/clinic/notification-settings-form";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -139,6 +139,29 @@ export default async function SettingsPage({
           </div>
           <Button size="sm" className="gap-1.5" nativeButton={false} render={<Link href={`/clinic/${clinicId}/staff`} />}>
             {t.settings.team.manageLink}
+            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Globe2 className="size-4.5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold">{t.settings.regional.title}</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">{t.settings.regional.description}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="gap-1.5"
+            nativeButton={false}
+            render={<Link href={`/clinic/${clinicId}/settings/regional`} />}
+          >
+            {t.settings.regional.manageLink}
             <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
           </Button>
         </CardContent>

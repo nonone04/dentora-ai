@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getUser } from "@/lib/supabase/auth";
-import { createPlanCheckoutSession, type CheckoutPlan } from "@/lib/stripe/checkout";
+import { createPlanCheckoutSession, resolveCheckoutCurrency, type CheckoutPlan } from "@/lib/stripe/checkout";
 import { track } from "@/lib/telemetry";
 
 export type CheckoutFormState = { error?: string } | undefined;
@@ -23,6 +23,7 @@ export type CheckoutFormState = { error?: string } | undefined;
  */
 export async function createCheckoutSession(
   plan: CheckoutPlan,
+  currency: string,
   _prevState: CheckoutFormState,
   _formData: FormData,
 ): Promise<CheckoutFormState> {
@@ -32,7 +33,7 @@ export async function createCheckoutSession(
   }
 
   const t = await getServerDictionary();
-  const result = await createPlanCheckoutSession(user, plan);
+  const result = await createPlanCheckoutSession(user, plan, resolveCheckoutCurrency(currency));
 
   if ("error" in result) {
     return { error: t.billing.checkoutError };

@@ -14,9 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CURRENCY_CODES, DEFAULT_CURRENCY } from "@/lib/currency";
 import { useTranslations } from "@/lib/i18n";
 
 const initialState: ActionFormState = undefined;
+
+const selectClass =
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
 
 type ServiceRow = {
   id: string;
@@ -39,12 +43,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function ServiceDialog({
   clinicId,
   service,
+  defaultCurrency = DEFAULT_CURRENCY,
   triggerLabel,
   triggerVariant = "default",
   triggerSize = "default",
 }: {
   clinicId: string;
   service?: ServiceRow;
+  defaultCurrency?: string;
   triggerLabel: string;
   triggerVariant?: React.ComponentProps<typeof Button>["variant"];
   triggerSize?: React.ComponentProps<typeof Button>["size"];
@@ -106,7 +112,13 @@ export function ServiceDialog({
             />
           </Field>
           <Field label={t.services.dialog.currencyLabel}>
-            <Input name="currency" defaultValue={service?.currency ?? "MAD"} />
+            <select name="currency" defaultValue={service?.currency ?? defaultCurrency} className={selectClass}>
+              {CURRENCY_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
           </Field>
           {service && (
             <label className="flex items-center gap-2 text-sm font-medium">

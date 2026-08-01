@@ -12,6 +12,8 @@ import { requireUser } from "@/lib/supabase/auth";
 import { requireManager } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 import { identify, track } from "@/lib/telemetry";
+import { DEFAULT_CURRENCY, isCurrencyCode } from "@/lib/currency";
+import { isLocale } from "@/lib/i18n";
 
 async function getOrigin() {
   const requestHeaders = await headers();
@@ -97,6 +99,8 @@ export async function createClinic(
     }
   }
 
+  const currencyField = stringField(formData, "currency");
+
   const profileUpdate = {
     clinic_type: stringField(formData, "clinicType") || null,
     address: stringField(formData, "address") || null,
@@ -104,6 +108,9 @@ export async function createClinic(
     email: stringField(formData, "email") || null,
     website: stringField(formData, "website") || null,
     timezone: stringField(formData, "timezone") || undefined,
+    country: stringField(formData, "country") || null,
+    currency: isCurrencyCode(currencyField) ? currencyField : DEFAULT_CURRENCY,
+    date_format: stringField(formData, "dateFormat") || undefined,
     description: stringField(formData, "description") || null,
     logo_url: logoUrl,
   };
@@ -187,6 +194,43 @@ export async function updateNotificationSettings(
   }
 
   revalidatePath(`/clinic/${clinicId}/settings`);
+  return { success: true };
+}
+
+export type UpdateRegionalSettingsFormState = { error?: string; success?: boolean } | undefined;
+
+export async function updateRegionalSettings(
+  clinicId: string,
+  _prevState: UpdateRegionalSettingsFormState,
+  formData: FormData,
+): Promise<UpdateRegionalSettingsFormState> {
+  const user = await requireManager(clinicId);
+  if (!user) {
+    const t = await getServerDictionary();
+    return { error: t.validation.managersOnlyRegional };
+  }
+
+  const currencyField = stringField(formData, "currency");
+  const languageField = stringField(formData, "language");
+
+  const update = {
+    country: stringField(formData, "country") || null,
+    currency: isCurrencyCode(currencyField) ? currencyField : DEFAULT_CURRENCY,
+    default_language: isLocale(languageField) ? languageField : undefined,
+    timezone: stringField(formData, "timezone") || undefined,
+    date_format: stringField(formData, "dateFormat") || undefined,
+    number_format: stringField(formData, "numberFormat") || undefined,
+  };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("clinics").update(update).eq("id", clinicId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/clinic/${clinicId}/settings`);
+  revalidatePath(`/clinic/${clinicId}/settings/regional`);
   return { success: true };
 }
 

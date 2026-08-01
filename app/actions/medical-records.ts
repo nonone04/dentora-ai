@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { DEFAULT_CURRENCY, isCurrencyCode } from "@/lib/currency";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -79,6 +80,16 @@ export async function addTreatment(
   }
 
   const supabase = await createClient();
+
+  // treatments.currency defaults to 'MAD' at the DB level (a pre-multi-currency
+  // artifact) -- stamp the clinic's actual currency instead so a treatment
+  // cost is never silently mislabeled for clinics billing in something else.
+  let currency = DEFAULT_CURRENCY;
+  if (cost !== null) {
+    const { data: clinic } = await supabase.from("clinics").select("currency").eq("id", clinicId).single();
+    if (isCurrencyCode(clinic?.currency)) currency = clinic.currency;
+  }
+
   const { error } = await supabase.from("treatments").insert({
     patient_id: patientId,
     dentist_id: dentistId,
@@ -87,6 +98,7 @@ export async function addTreatment(
     description: description.trim(),
     tooth_reference: toothReference,
     cost,
+    currency,
     treated_at: treatedAt.toISOString(),
     created_by: user.id,
   });

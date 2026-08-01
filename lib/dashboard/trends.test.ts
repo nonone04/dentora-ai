@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bucketAmountsByDay, bucketCountsByDay, computeTrend, trendFromBuckets } from "@/lib/dashboard/trends";
+import { bucketAmountsByDay, bucketCountsByDay, computeTrend, servicePriceInClinicCurrency, trendFromBuckets } from "@/lib/dashboard/trends";
 
 describe("computeTrend", () => {
   it("is flat when current equals previous", () => {
@@ -58,6 +58,24 @@ describe("bucketAmountsByDay", () => {
       endExclusive,
     );
     expect(buckets).toEqual([0, 25, 150]);
+  });
+});
+
+describe("servicePriceInClinicCurrency", () => {
+  it("returns the raw price when the row's currency matches the clinic's", () => {
+    const row = { services: { price: 100, currency: "MAD" } };
+    expect(servicePriceInClinicCurrency(row, "MAD")).toBe(100);
+  });
+
+  it("converts to the clinic's currency instead of mixing currencies (regression for the old last-write-wins bug)", () => {
+    const row = { services: { price: 100, currency: "USD" } };
+    const converted = servicePriceInClinicCurrency(row, "EUR");
+    expect(converted).not.toBe(100);
+    expect(converted).toBeGreaterThan(0);
+  });
+
+  it("is 0 for a row with no price", () => {
+    expect(servicePriceInClinicCurrency({ services: null }, "MAD")).toBe(0);
   });
 });
 

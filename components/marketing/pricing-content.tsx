@@ -45,7 +45,11 @@ import { FinalCtaSection } from "@/components/marketing/sections/final-cta-secti
 import { PlanCheckoutButton } from "@/components/marketing/plan-checkout-button";
 import { Reveal } from "@/components/marketing/motion/reveal";
 import { SectionBackground } from "@/components/marketing/motion/section-background";
-import { useTranslations } from "@/lib/i18n";
+import { CurrencySelector } from "@/components/marketing/currency-selector";
+import { INTL_LOCALE } from "@/lib/format";
+import { useLocale, useTranslations } from "@/lib/i18n";
+import { convert, formatCurrency, useCurrency } from "@/lib/currency";
+import { PLAN_KEYS, PLAN_PRICING, isCustomPricing } from "@/lib/marketing/pricing-plans";
 import { cn } from "@/lib/utils";
 import type { CheckoutPlan } from "@/lib/stripe/checkout";
 
@@ -97,11 +101,14 @@ function ComparisonCell({ value }: { value: string }) {
 
 export function PricingContent() {
   const t = useTranslations();
+  const { locale } = useLocale();
+  const { currency } = useCurrency();
   const plans = t.marketing.pricing.plans;
   const rows = t.marketing.pricing.comparisonTable.rows;
   const faqItems = t.marketing.pricing.faq.items;
   const [billing, setBilling] = useState<BillingPeriod>("monthly");
   const shouldReduceMotion = useReducedMotion();
+  const localeTag = INTL_LOCALE[locale];
 
   return (
     <div className="flex flex-col">
@@ -119,7 +126,7 @@ export function PricingContent() {
             <p className="mt-4 text-balance text-lg text-slate-600 dark:text-slate-300">{t.marketing.pricing.subtitle}</p>
           </Reveal>
 
-          <Reveal delay={80} className="mt-8 flex justify-center">
+          <Reveal delay={80} className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <div
               role="group"
               aria-label={`${t.marketing.pricing.billingToggle.monthly} / ${t.marketing.pricing.billingToggle.yearly}`}
@@ -161,6 +168,7 @@ export function PricingContent() {
                 );
               })}
             </div>
+            <CurrencySelector />
           </Reveal>
         </div>
       </section>
@@ -170,18 +178,37 @@ export function PricingContent() {
           <div className="grid items-start gap-6 max-md:gap-8 lg:grid-cols-3 lg:gap-8">
             {plans.map((plan, index) => {
               const isPopular = index === 1;
-              const isCustom = !plan.yearlyBilledTotal;
-              const showCrossedOut = billing === "yearly" && !isCustom && Boolean(plan.yearlyOriginalPrice);
-              const displayedPrice = billing === "yearly" && !isCustom ? plan.yearlyBilledTotal : plan.monthlyPrice;
+              const pricing = PLAN_PRICING[PLAN_KEYS[index]];
+              const isCustom = isCustomPricing(pricing);
+
+              let displayedPrice = t.marketing.pricing.customPrice;
+              let yearlyOriginalDisplay: string | null = null;
+              let yearlySavingsDisplay: string | null = null;
+
+              if (!isCustom) {
+                const yearlyOriginalMad = pricing.monthlyPriceMad * 12;
+                const amountMad = billing === "yearly" ? pricing.yearlyBilledTotalMad : pricing.monthlyPriceMad;
+                displayedPrice = formatCurrency(convert(amountMad, "MAD", currency), currency, localeTag);
+                if (billing === "yearly") {
+                  yearlyOriginalDisplay = formatCurrency(convert(yearlyOriginalMad, "MAD", currency), currency, localeTag);
+                  yearlySavingsDisplay = formatCurrency(
+                    convert(yearlyOriginalMad - pricing.yearlyBilledTotalMad, "MAD", currency),
+                    currency,
+                    localeTag,
+                  );
+                }
+              }
+
+              const showCrossedOut = billing === "yearly" && !isCustom && Boolean(yearlyOriginalDisplay);
               const displayedSuffix = isCustom ? "" : billing === "yearly" ? t.marketing.pricing.perYear : t.marketing.pricing.perMonth;
-              const showSavings = billing === "yearly" && !isCustom && Boolean(plan.yearlySavings);
+              const showSavings = billing === "yearly" && !isCustom && Boolean(yearlySavingsDisplay);
 
               const priceBlock = (
                 <div>
                   <div className="flex flex-wrap items-baseline gap-2">
                     {showCrossedOut && (
                       <span className="text-lg font-medium text-slate-400 line-through dark:text-slate-600" aria-hidden="true">
-                        {plan.yearlyOriginalPrice}
+                        {yearlyOriginalDisplay}
                       </span>
                     )}
                     <span
@@ -196,7 +223,7 @@ export function PricingContent() {
                   </div>
                   {showSavings && (
                     <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:bg-teal-400/10 dark:text-teal-300">
-                      {t.marketing.pricing.savingsPrefix} {plan.yearlySavings}
+                      {t.marketing.pricing.savingsPrefix} {yearlySavingsDisplay}
                     </p>
                   )}
                 </div>
@@ -296,7 +323,7 @@ export function PricingContent() {
                       const checkoutPlan = CHECKOUT_PLANS[index];
 
                       return checkoutPlan ? (
-                        <PlanCheckoutButton plan={checkoutPlan} className={cn(ctaClassName, "w-full")}>
+                        <PlanCheckoutButton plan={checkoutPlan} currency={currency} className={cn(ctaClassName, "w-full")}>
                           {plan.cta}
                         </PlanCheckoutButton>
                       ) : (

@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getServerCurrency } from "@/lib/currency/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createPlanCheckoutSession, isCheckoutPlan } from "@/lib/stripe/checkout";
 import { track } from "@/lib/telemetry";
@@ -24,7 +25,8 @@ export default async function CheckoutPlanPage({ params }: { params: Promise<{ p
     redirect(`/login?next=${encodeURIComponent(`/checkout/${plan}`)}`);
   }
 
-  const result = await createPlanCheckoutSession(user, plan);
+  const currency = await getServerCurrency();
+  const result = await createPlanCheckoutSession(user, plan, currency);
   if ("error" in result) {
     redirect("/pricing");
   }

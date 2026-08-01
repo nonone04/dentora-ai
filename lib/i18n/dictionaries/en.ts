@@ -341,6 +341,22 @@ export const en = {
       invite: "Invite member",
       manageLink: "Manage staff",
     },
+    regional: {
+      title: "Regional",
+      description: "Country, currency, language and formatting for this clinic.",
+      manageLink: "Manage regional settings",
+      back: "Back to Settings",
+      page: {
+        title: "Regional Settings",
+        description: "These settings control how currency, dates and numbers appear throughout your dashboard.",
+        countryLabel: "Country",
+        currencyLabel: "Currency",
+        languageLabel: "Language",
+        timezoneLabel: "Time zone",
+        dateFormatLabel: "Date format",
+        numberFormatLabel: "Number format",
+      },
+    },
     whatsappWizard: {
       title: "WhatsApp",
       status: {
@@ -482,6 +498,8 @@ export const en = {
     createClinicDescriptionWithInvitations: "Or set up your own clinic instead.",
     needHelp: "Need help?",
     clinicNameLabel: "Clinic name",
+    businessSettingsTitle: "Business settings",
+    businessSettingsDescription: "Sets how dates, numbers and money are shown across your dashboard -- you can change these later in Settings.",
     createClinicButton: "✨ Create My Clinic",
     creatingClinic: "Creating your clinic...",
     submitHint: "Takes less than 30 seconds",
@@ -525,6 +543,13 @@ export const en = {
       websitePlaceholder: "https://yourclinic.com",
       timezoneLabel: "Timezone",
       timezoneHelper: "Used to schedule appointments and reminders correctly.",
+      countryLabel: "Country",
+      countryHelper: "Sets a sensible currency default -- you can still change it below.",
+      countryPlaceholder: "Select a country",
+      currencyLabel: "Currency",
+      currencyHelper: "Used for pricing, invoices and revenue throughout your dashboard.",
+      dateFormatLabel: "Date format",
+      dateFormatHelper: "How dates are displayed across your dashboard.",
       descriptionLabel: "Clinic description",
       descriptionHelper: "A short overview your AI assistant can use to answer patient questions.",
       descriptionPlaceholder: "Tell patients what makes your clinic different...",
@@ -705,6 +730,7 @@ export const en = {
     managersOnlyDentists: "Only clinic owners and admins can add dentists.",
     managersOnlyNotifications: "Only clinic owners and admins can update notification settings.",
     managersOnlyAI: "Only clinic owners and admins can update AI settings.",
+    managersOnlyRegional: "Only clinic owners and admins can update regional settings.",
     passwordTooShort: "Password must be at least 8 characters.",
     passwordTooWeak: "Please choose a stronger password.",
     passwordCommon: "This password is too common. Please choose another.",
@@ -1466,7 +1492,8 @@ export const en = {
       subtitle: "Choose the plan that fits your clinic. Upgrade, downgrade, or cancel anytime.",
       popular: "Most popular",
       disclaimer:
-        "Prices shown in MAD, excluding tax. Yearly billing is charged as a single upfront annual payment. Contact us for multi-clinic or custom Enterprise pricing.",
+        "Prices shown are converted estimates, excluding tax, and charged in MAD at checkout. Yearly billing is charged as a single upfront annual payment. Contact us for multi-clinic or custom Enterprise pricing.",
+      customPrice: "Custom",
       billingToggle: {
         monthly: "Monthly",
         yearly: "Yearly",
@@ -1482,11 +1509,6 @@ export const en = {
         {
           name: "Starter",
           description: "Perfect for independent dentists and small clinics beginning their AI journey.",
-          monthlyPrice: "490 MAD",
-          yearlyOriginalPrice: "5,880 MAD",
-          yearlyBilledTotal: "4,700 MAD",
-          yearlySavings: "1,180 MAD",
-          priceSuffix: "/month",
           includesLabel: "",
           features: [
             "AI Receptionist (Calls, Chat & WhatsApp)",
@@ -1507,11 +1529,6 @@ export const en = {
           name: "Professional",
           description:
             "Designed for growing clinics that want complete automation, better patient communication and deeper operational insights.",
-          monthlyPrice: "990 MAD",
-          yearlyOriginalPrice: "11,880 MAD",
-          yearlyBilledTotal: "9,500 MAD",
-          yearlySavings: "2,380 MAD",
-          priceSuffix: "/month",
           includesLabel: "Everything in Starter, plus:",
           features: [
             "Unlimited Staff",
@@ -1536,11 +1553,6 @@ export const en = {
         {
           name: "Enterprise",
           description: "Built for dental groups, DSOs and enterprise healthcare organizations.",
-          monthlyPrice: "Custom",
-          yearlyOriginalPrice: "",
-          yearlyBilledTotal: "",
-          yearlySavings: "",
-          priceSuffix: "",
           includesLabel: "Everything in Professional, plus:",
           features: [
             "Unlimited Clinic Locations",

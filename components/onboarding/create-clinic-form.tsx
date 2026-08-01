@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { AlertCircle, Building2, ChevronDown, Clock, FileText, Globe, Loader2, Mail, MapPin, Phone, Sparkles } from "lucide-react";
+import { AlertCircle, Banknote, Building2, CalendarDays, ChevronDown, Clock, FileText, Globe, Loader2, Mail, MapPin, Phone, Sparkles } from "lucide-react";
 import { createClinic, type CreateClinicFormState } from "@/app/actions/clinics";
 import { ClinicFieldIcon, ClinicFieldWrapper, clinicFieldControlClass, clinicFieldTextareaClass } from "@/components/onboarding/clinic-field";
 import { LogoUploadField } from "@/components/onboarding/logo-upload-field";
 import { Button } from "@/components/ui/button";
-import { CLINIC_TYPE_KEYS, DEFAULT_CLINIC_TIMEZONE, TIMEZONE_OPTIONS } from "@/lib/onboarding/clinic-options";
+import { CLINIC_TYPE_KEYS, DATE_FORMAT_OPTIONS, DEFAULT_CLINIC_DATE_FORMAT, DEFAULT_CLINIC_TIMEZONE, TIMEZONE_OPTIONS } from "@/lib/onboarding/clinic-options";
+import { COUNTRY_CODES, COUNTRY_NAMES, COUNTRY_TO_CURRENCY, CURRENCY_CODES, DEFAULT_CURRENCY } from "@/lib/currency";
 import { useTranslations } from "@/lib/i18n";
 
 const initialState: CreateClinicFormState = undefined;
@@ -19,7 +20,20 @@ export function CreateClinicForm() {
   const [clinicType, setClinicType] = useState("");
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
+  const [country, setCountry] = useState("");
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
+
+  // Currency auto-defaults from Country but stays independently editable --
+  // once the clinic owner picks a currency directly, further country
+  // changes stop overwriting their choice.
+  function handleCountryChange(value: string) {
+    setCountry(value);
+    if (!currencyTouched) {
+      setCurrency(COUNTRY_TO_CURRENCY[value] ?? DEFAULT_CURRENCY);
+    }
+  }
 
   function handleLogoSelect(file: File | null) {
     if (objectUrlRef.current) {
@@ -141,6 +155,85 @@ export function CreateClinicForm() {
               {TIMEZONE_OPTIONS.map((tz) => (
                 <option key={tz.value} value={tz.value} className="bg-[#0c111d] text-white">
                   {tz.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-white/40"
+              aria-hidden="true"
+            />
+          </div>
+        </ClinicFieldWrapper>
+
+        <div className="sm:col-span-2">
+          <p className="text-sm font-semibold text-white/90">{t.onboarding.businessSettingsTitle}</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/45">{t.onboarding.businessSettingsDescription}</p>
+        </div>
+
+        <ClinicFieldWrapper label={t.onboarding.form.countryLabel} helper={t.onboarding.form.countryHelper} htmlFor="country">
+          <div className="relative">
+            <ClinicFieldIcon icon={Globe} />
+            <select
+              id="country"
+              name="country"
+              value={country}
+              onChange={(event) => handleCountryChange(event.target.value)}
+              className={`${clinicFieldControlClass} appearance-none pe-9`}
+            >
+              <option value="" className="bg-[#0c111d] text-white/50">
+                {t.onboarding.form.countryPlaceholder}
+              </option>
+              {COUNTRY_CODES.map((code) => (
+                <option key={code} value={code} className="bg-[#0c111d] text-white">
+                  {COUNTRY_NAMES[code]}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-white/40"
+              aria-hidden="true"
+            />
+          </div>
+        </ClinicFieldWrapper>
+
+        <ClinicFieldWrapper label={t.onboarding.form.currencyLabel} helper={t.onboarding.form.currencyHelper} htmlFor="currency">
+          <div className="relative">
+            <ClinicFieldIcon icon={Banknote} />
+            <select
+              id="currency"
+              name="currency"
+              value={currency}
+              onChange={(event) => {
+                setCurrency(event.target.value as typeof currency);
+                setCurrencyTouched(true);
+              }}
+              className={`${clinicFieldControlClass} appearance-none pe-9`}
+            >
+              {CURRENCY_CODES.map((code) => (
+                <option key={code} value={code} className="bg-[#0c111d] text-white">
+                  {code}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-white/40"
+              aria-hidden="true"
+            />
+          </div>
+        </ClinicFieldWrapper>
+
+        <ClinicFieldWrapper label={t.onboarding.form.dateFormatLabel} helper={t.onboarding.form.dateFormatHelper} htmlFor="dateFormat">
+          <div className="relative">
+            <ClinicFieldIcon icon={CalendarDays} />
+            <select
+              id="dateFormat"
+              name="dateFormat"
+              defaultValue={DEFAULT_CLINIC_DATE_FORMAT}
+              className={`${clinicFieldControlClass} appearance-none pe-9`}
+            >
+              {DATE_FORMAT_OPTIONS.map((format) => (
+                <option key={format.value} value={format.value} className="bg-[#0c111d] text-white">
+                  {format.label}
                 </option>
               ))}
             </select>

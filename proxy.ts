@@ -1,9 +1,32 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { applyRememberMe, REMEMBER_ME_COOKIE } from "@/lib/supabase/cookie-persistence";
+import { CURRENCY_COOKIE_MAX_AGE_SECONDS, CURRENCY_COOKIE_NAME } from "@/lib/currency/config";
+import { COUNTRY_TO_CURRENCY } from "@/lib/currency/country-map";
 
 const PROTECTED_PREFIXES = ["/clinic", "/account"];
 const AUTH_ROUTES = ["/login"];
+
+/**
+ * First-visit currency default from geo-IP: Vercel's edge network injects
+ * `x-vercel-ip-country` on every request regardless of Next.js version (this
+ * is platform-level, unrelated to the `NextRequest.geo`/`.ip` shortcuts
+ * Next 15 removed). Only sets the cookie when the visitor hasn't already
+ * chosen a currency -- never overwrites an explicit selection.
+ */
+function applyGeoCurrency(request: NextRequest, response: NextResponse) {
+  if (request.cookies.has(CURRENCY_COOKIE_NAME)) return;
+
+  const country = request.headers.get("x-vercel-ip-country");
+  const currency = country ? COUNTRY_TO_CURRENCY[country] : undefined;
+  if (!currency) return;
+
+  response.cookies.set(CURRENCY_COOKIE_NAME, currency, {
+    path: "/",
+    maxAge: CURRENCY_COOKIE_MAX_AGE_SECONDS,
+    sameSite: "lax",
+  });
+}
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -50,16 +73,21 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", path);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    applyGeoCurrency(request, redirectResponse);
+    return redirectResponse;
   }
 
   if (isAuthRoute && isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    applyGeoCurrency(request, redirectResponse);
+    return redirectResponse;
   }
 
+  applyGeoCurrency(request, response);
   return response;
 }
 

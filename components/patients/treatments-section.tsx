@@ -5,7 +5,8 @@ import { addTreatment, type ActionFormState } from "@/app/actions/medical-record
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { formatDateTime, serviceName } from "@/lib/format";
+import { DEFAULT_CURRENCY, formatCurrency, isCurrencyCode } from "@/lib/currency";
+import { formatDateTime, INTL_LOCALE, serviceName } from "@/lib/format";
 import { interpolate, type Dictionary, type Locale } from "@/lib/i18n";
 
 type TreatmentRow = {
@@ -84,9 +85,7 @@ export function TreatmentsSection({
                 <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
                   {tr.tooth_reference && <span>{interpolate(t.patientDetail.treatments.toothPrefix, { tooth: tr.tooth_reference })}</span>}
                   {tr.cost != null && (
-                    <span>
-                      {tr.cost} {tr.currency}
-                    </span>
+                    <span>{formatCurrency(Number(tr.cost), isCurrencyCode(tr.currency) ? tr.currency : DEFAULT_CURRENCY, INTL_LOCALE[locale])}</span>
                   )}
                 </div>
               </li>

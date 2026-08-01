@@ -1,7 +1,7 @@
 import type { Locale } from "@/lib/i18n/types";
 
 /** Maps our 3 UI locales to concrete Intl locale tags. en/fr default to their -GB/-FR forms (24h clock, day-month-year) to match this app's original en-GB-only formatting; ar uses Morocco's Arabic locale, which formats dates with Western digits (matching the rest of the region-specific choices here) while still translating month/weekday names. */
-const INTL_LOCALE: Record<Locale, string> = {
+export const INTL_LOCALE: Record<Locale, string> = {
   en: "en-GB",
   fr: "fr-FR",
   ar: "ar-MA",
