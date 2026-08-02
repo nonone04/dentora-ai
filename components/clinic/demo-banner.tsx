@@ -54,7 +54,7 @@ export function DemoBanner({ clinicId }: { clinicId: string }) {
           <RotateCcwIcon className="size-3.5" aria-hidden="true" />
           {t.demo.banner.reset}
         </Button>
-        <Button size="sm" nativeButton={false} render={<Link href="/login" />}>
+        <Button size="sm" nativeButton={false} render={<Link href="/pricing" />}>
           {t.demo.banner.signUp}
         </Button>
       </div>

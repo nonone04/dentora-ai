@@ -20,6 +20,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "trial_ending_7d",
   "trial_ending_1d",
   "contact_auto_reply",
+  "contact_sales_notification",
   "support_ticket_confirmation",
 ] as const;
 

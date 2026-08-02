@@ -87,7 +87,31 @@ export const DEMO_PATIENTS: DemoPatientFixture[] = [
 ];
 
 const DAILY_SLOT_HOURS = [9, 10.5, 12, 14, 15.5, 17];
+
+// 60% completed, 20% cancelled, 20% no-show -- a believable mix for an
+// already-happened slot ("pending" doesn't apply to the past).
 const APPOINTMENT_STATUSES_PAST = ["completed", "completed", "completed", "cancelled", "no_show"] as const;
+
+// Mostly confirmed/pending (scheduled) for upcoming slots, with an
+// occasional cancellation mixed in -- real patients do cancel ahead of time,
+// not only after the fact.
+const APPOINTMENT_STATUSES_FUTURE = [
+  "confirmed",
+  "scheduled",
+  "confirmed",
+  "scheduled",
+  "confirmed",
+  "cancelled",
+  "scheduled",
+] as const;
+
+// Fixed day counts rather than "start of last/next week" -- independent of
+// which weekday `now` falls on, this always guarantees a full 14 days of
+// past history (matching SPARKLINE_DAYS in lib/dashboard/trends.ts, so the
+// revenue/appointment sparklines are never sparse) plus 14 days of upcoming
+// bookings for the calendar, with `now`'s own day always included.
+const WINDOW_PAST_DAYS = 14;
+const WINDOW_FUTURE_DAYS = 14;
 
 export type DemoAppointmentDraft = {
   dentistIndex: number;
@@ -99,30 +123,36 @@ export type DemoAppointmentDraft = {
 };
 
 /**
- * Builds a 3-week spread of appointments (1 week past, current week, 1 week
+ * Builds a rolling spread of appointments (14 days past, today, 14 days
  * ahead) relative to `now`, one grid of fixed slots per dentist per weekday
  * so no two appointments for the same dentist ever overlap (required by the
  * appointments_no_overlap exclusion constraint). Purely deterministic --
  * same inputs always produce the same schedule, which is what "reset demo
- * data" relies on.
+ * data" relies on -- and always relative to `now`, so the demo clinic never
+ * goes stale: every reset/reseed lands the whole schedule in the current
+ * month again instead of wherever it happened to be seeded originally.
  */
 export function buildDemoAppointments(now: Date = new Date()): DemoAppointmentDraft[] {
   const drafts: DemoAppointmentDraft[] = [];
   let patientCursor = 0;
   let serviceCursor = 0;
+  let pastCursor = 0;
+  let futureCursor = 0;
 
-  const startOfWeek = new Date(now);
-  startOfWeek.setHours(0, 0, 0, 0);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() - 7);
+  const windowStart = new Date(now);
+  windowStart.setHours(0, 0, 0, 0);
+  windowStart.setDate(windowStart.getDate() - WINDOW_PAST_DAYS);
 
-  for (let dayOffset = 0; dayOffset < 21; dayOffset++) {
-    const day = new Date(startOfWeek);
+  const totalDays = WINDOW_PAST_DAYS + WINDOW_FUTURE_DAYS + 1;
+
+  for (let dayOffset = 0; dayOffset < totalDays; dayOffset++) {
+    const day = new Date(windowStart);
     day.setDate(day.getDate() + dayOffset);
     const weekday = day.getDay();
     if (weekday === 0 || weekday === 6) continue; // weekends closed
 
     DEMO_DENTISTS.forEach((_, dentistIndex) => {
-      // Each dentist gets 2-3 slots a day, offset so schedules don't collide.
+      // Each dentist gets 1-2 slots a day, offset so schedules don't collide.
       const slotsForDentist = DAILY_SLOT_HOURS.filter((_, i) => i % DEMO_DENTISTS.length === dentistIndex);
 
       slotsForDentist.forEach((hour) => {
@@ -135,11 +165,14 @@ export function buildDemoAppointments(now: Date = new Date()): DemoAppointmentDr
         const end = new Date(start.getTime() + service.durationMinutes * 60 * 1000);
 
         const isPast = start.getTime() < now.getTime();
-        const status: DemoAppointmentDraft["status"] = isPast
-          ? APPOINTMENT_STATUSES_PAST[(dentistIndex + dayOffset) % APPOINTMENT_STATUSES_PAST.length]
-          : dayOffset % 3 === 0
-            ? "confirmed"
-            : "scheduled";
+        let status: DemoAppointmentDraft["status"];
+        if (isPast) {
+          status = APPOINTMENT_STATUSES_PAST[pastCursor % APPOINTMENT_STATUSES_PAST.length];
+          pastCursor++;
+        } else {
+          status = APPOINTMENT_STATUSES_FUTURE[futureCursor % APPOINTMENT_STATUSES_FUTURE.length];
+          futureCursor++;
+        }
 
         drafts.push({
           dentistIndex,

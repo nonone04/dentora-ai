@@ -5,6 +5,7 @@ import { appointmentConfirmationTemplate } from "@/lib/email/templates/appointme
 import { appointmentReminderTemplate } from "@/lib/email/templates/appointment-reminder";
 import { appointmentRescheduledTemplate } from "@/lib/email/templates/appointment-rescheduled";
 import { contactAutoReplyTemplate } from "@/lib/email/templates/contact-auto-reply";
+import { contactSalesNotificationTemplate } from "@/lib/email/templates/contact-sales-notification";
 import { invitationAcceptedTemplate } from "@/lib/email/templates/invitation-accepted";
 import { magicLoginTemplate } from "@/lib/email/templates/magic-login";
 import { passwordChangedTemplate } from "@/lib/email/templates/password-changed";
@@ -47,6 +48,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, AnyEmailTemplateEntry> = {
   trial_ending_7d: trialEnding7dTemplate as AnyEmailTemplateEntry,
   trial_ending_1d: trialEnding1dTemplate as AnyEmailTemplateEntry,
   contact_auto_reply: contactAutoReplyTemplate as AnyEmailTemplateEntry,
+  contact_sales_notification: contactSalesNotificationTemplate as AnyEmailTemplateEntry,
   support_ticket_confirmation: supportTicketConfirmationTemplate as AnyEmailTemplateEntry,
 };
 

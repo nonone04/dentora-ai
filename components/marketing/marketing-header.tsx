@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Menu, MonitorPlay, Sparkles, Tag, X, type LucideIcon } from "lucide-react";
+import { ArrowRight, ChevronRight, Mail, Menu, MonitorPlay, Sparkles, Tag, X, type LucideIcon } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -70,6 +70,7 @@ export function MarketingHeader({ navState }: { navState: MarketingNavState }) {
     { href: "/#features", label: t.marketing.nav.features, icon: Sparkles },
     { href: "/pricing", label: t.marketing.nav.pricing, icon: Tag },
     { href: "/demo", label: t.marketing.nav.demo, icon: MonitorPlay },
+    { href: "/contact", label: t.marketing.nav.contact, icon: Mail },
   ];
 
   // Locks background scroll while the drawer is open, and marks it `inert`

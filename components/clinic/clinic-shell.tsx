@@ -18,6 +18,7 @@ export function ClinicShell({
   showOnboardingTour = false,
   notifications = [],
   unreadNotificationCount = 0,
+  planBadge = null,
   children,
 }: {
   clinicId: string;
@@ -28,6 +29,7 @@ export function ClinicShell({
   showOnboardingTour?: boolean;
   notifications?: NotificationCenterItem[];
   unreadNotificationCount?: number;
+  planBadge?: { plan: "standard" | "professional" } | null;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -60,6 +62,7 @@ export function ClinicShell({
           onMenuClick={() => setSidebarOpen((open) => !open)}
           notifications={notifications}
           unreadNotificationCount={unreadNotificationCount}
+          planBadge={planBadge}
         />
         <main className="relative flex-1 overflow-x-hidden p-4 sm:p-6 lg:ps-8">{children}</main>
       </div>

@@ -3,7 +3,7 @@ import { ClinicShell } from "@/components/clinic/clinic-shell";
 import { countUnreadNotifications, listNotificationCenterItems } from "@/lib/notifications/queries";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
-import { clinicHasActiveSubscription } from "@/lib/supabase/subscription";
+import { clinicHasActiveSubscription, getOwnerPlanBadge } from "@/lib/supabase/subscription";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ClinicLayout({
@@ -38,10 +38,13 @@ export default async function ClinicLayout({
     redirect("/pricing");
   }
 
-  const [{ data: profile }, notifications, unreadNotificationCount] = await Promise.all([
+  const isDemo = clinic?.is_demo ?? false;
+
+  const [{ data: profile }, notifications, unreadNotificationCount, planBadge] = await Promise.all([
     supabase.from("profiles").select("full_name, onboarding_tour_completed_at").eq("id", user.id).maybeSingle(),
     listNotificationCenterItems(supabase, { clinicId, channel: "in_app", limit: 30 }),
     countUnreadNotifications(supabase, clinicId),
+    membership.role === "owner" && !isDemo ? getOwnerPlanBadge(supabase, user.id) : Promise.resolve(null),
   ]);
 
   const userDisplayName = profile?.full_name || user.email || "Account";
@@ -52,10 +55,11 @@ export default async function ClinicLayout({
       clinicName={membership.clinicName}
       role={membership.role}
       userDisplayName={userDisplayName}
-      isDemo={clinic?.is_demo ?? false}
+      isDemo={isDemo}
       showOnboardingTour={!profile?.onboarding_tour_completed_at}
       notifications={notifications ?? []}
       unreadNotificationCount={unreadNotificationCount ?? 0}
+      planBadge={planBadge}
     >
       {children}
     </ClinicShell>

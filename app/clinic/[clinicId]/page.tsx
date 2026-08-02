@@ -9,7 +9,6 @@ import { NotificationCenter, NotificationCenterSkeleton } from "@/components/das
 import { PatientInsights, PatientInsightsSkeleton } from "@/components/dashboard/patient-insights";
 import { QuickActions, QuickActionsSkeleton } from "@/components/dashboard/quick-actions";
 import { RevenueChart, RevenueChartSkeleton } from "@/components/dashboard/revenue-chart";
-import { SubscriptionStatusCard, SubscriptionStatusCardSkeleton } from "@/components/dashboard/subscription-status-card";
 import { SystemHealthPanel, SystemHealthPanelSkeleton } from "@/components/dashboard/system-health-panel";
 import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
 import type { Dictionary } from "@/lib/i18n/server";
@@ -70,11 +69,6 @@ export default async function ClinicOverviewPage({
           <Suspense fallback={<QuickActionsSkeleton />}>
             <QuickActions clinicId={clinicId} />
           </Suspense>
-          {membership.role === "owner" && (
-            <Suspense fallback={<SubscriptionStatusCardSkeleton />}>
-              <SubscriptionStatusCard userId={user.id} />
-            </Suspense>
-          )}
         </div>
       </div>
 

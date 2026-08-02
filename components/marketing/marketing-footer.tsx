@@ -51,6 +51,9 @@ export function MarketingFooter({ navState }: { navState: MarketingNavState }) {
               <Link href="/demo" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.demo}
               </Link>
+              <Link href="/contact" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                {t.marketing.nav.contact}
+              </Link>
             </nav>
           </div>
 
