@@ -7,8 +7,9 @@ import { ShowcaseSections } from "@/components/marketing/sections/showcase-secti
 import { TestimonialsSection } from "@/components/marketing/sections/testimonials-section";
 import { TrustBarSection } from "@/components/marketing/sections/trust-bar-section";
 import { SectionDivider } from "@/components/marketing/motion/section-divider";
+import type { PlanKey, PlanPricing } from "@/lib/marketing/pricing-plans";
 
-export function MarketingHomeContent() {
+export function MarketingHomeContent({ planPricing }: { planPricing: Record<PlanKey, PlanPricing> }) {
   return (
     <div className="flex flex-col">
       <HeroSection />
@@ -19,7 +20,7 @@ export function MarketingHomeContent() {
       <SectionDivider />
       <TestimonialsSection />
       <SectionDivider />
-      <PricingPreviewSection />
+      <PricingPreviewSection planPricing={planPricing} />
       <SectionDivider />
       <FaqSection />
       <FinalCtaSection />

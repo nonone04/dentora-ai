@@ -6,6 +6,7 @@ import { MarketingHomeContent } from "@/components/marketing/home-content";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getPlanPricing } from "@/lib/marketing/pricing-plans";
 
 type PendingInvitation = {
   membership_id: string;
@@ -19,10 +20,11 @@ export default async function Home() {
   const user = await getUser();
 
   if (!user) {
+    const planPricing = await getPlanPricing();
     return (
       <>
         <MarketingHeader />
-        <MarketingHomeContent />
+        <MarketingHomeContent planPricing={planPricing} />
         <MarketingFooter />
       </>
     );

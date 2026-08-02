@@ -1578,7 +1578,7 @@ export const fr = {
       subtitle: "Choisissez la formule adaptée à votre clinique. Changez de formule ou annulez à tout moment.",
       popular: "Le plus populaire",
       disclaimer:
-        "Les prix affichés sont des estimations converties, hors taxes, et sont facturés en MAD au paiement. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
+        "Les prix affichés sont des estimations converties, hors taxes, et sont facturés en USD au paiement. La facturation annuelle correspond à un paiement unique par an. Contactez-nous pour une tarification multi-cliniques ou Enterprise sur mesure.",
       customPrice: "Sur devis",
       billingToggle: {
         monthly: "Mensuel",

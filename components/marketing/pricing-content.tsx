@@ -49,7 +49,7 @@ import { CurrencySelector } from "@/components/marketing/currency-selector";
 import { INTL_LOCALE } from "@/lib/format";
 import { useLocale, useTranslations } from "@/lib/i18n";
 import { convert, formatCurrency, useCurrency } from "@/lib/currency";
-import { PLAN_KEYS, PLAN_PRICING, isCustomPricing } from "@/lib/marketing/pricing-plans";
+import { PLAN_KEYS, isCustomPricing, type PlanKey, type PlanPricing } from "@/lib/marketing/pricing-plans";
 import { cn } from "@/lib/utils";
 import type { CheckoutPlan } from "@/lib/stripe/checkout";
 
@@ -99,7 +99,7 @@ function ComparisonCell({ value }: { value: string }) {
   return <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{value}</span>;
 }
 
-export function PricingContent() {
+export function PricingContent({ planPricing }: { planPricing: Record<PlanKey, PlanPricing> }) {
   const t = useTranslations();
   const { locale } = useLocale();
   const { currency } = useCurrency();
@@ -178,7 +178,7 @@ export function PricingContent() {
           <div className="grid items-start gap-6 max-md:gap-8 lg:grid-cols-3 lg:gap-8">
             {plans.map((plan, index) => {
               const isPopular = index === 1;
-              const pricing = PLAN_PRICING[PLAN_KEYS[index]];
+              const pricing = planPricing[PLAN_KEYS[index]];
               const isCustom = isCustomPricing(pricing);
 
               let displayedPrice = t.marketing.pricing.customPrice;
@@ -186,13 +186,13 @@ export function PricingContent() {
               let yearlySavingsDisplay: string | null = null;
 
               if (!isCustom) {
-                const yearlyOriginalMad = pricing.monthlyPriceMad * 12;
-                const amountMad = billing === "yearly" ? pricing.yearlyBilledTotalMad : pricing.monthlyPriceMad;
-                displayedPrice = formatCurrency(convert(amountMad, "MAD", currency), currency, localeTag);
+                const yearlyOriginal = pricing.monthlyPrice * 12;
+                const amount = billing === "yearly" ? pricing.yearlyBilledTotal : pricing.monthlyPrice;
+                displayedPrice = formatCurrency(convert(amount, pricing.currency, currency), currency, localeTag);
                 if (billing === "yearly") {
-                  yearlyOriginalDisplay = formatCurrency(convert(yearlyOriginalMad, "MAD", currency), currency, localeTag);
+                  yearlyOriginalDisplay = formatCurrency(convert(yearlyOriginal, pricing.currency, currency), currency, localeTag);
                   yearlySavingsDisplay = formatCurrency(
-                    convert(yearlyOriginalMad - pricing.yearlyBilledTotalMad, "MAD", currency),
+                    convert(yearlyOriginal - pricing.yearlyBilledTotal, pricing.currency, currency),
                     currency,
                     localeTag,
                   );
