@@ -3,14 +3,22 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Menu, MonitorPlay, Sparkles, Tag, X, type LucideIcon } from "lucide-react";
+import { signOut } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/marketing/logo";
 import { ctaGlowClass } from "@/components/marketing/motion/interactive-classes";
 import { useTranslations } from "@/lib/i18n";
+import type { MarketingNavState } from "@/lib/supabase/post-auth-destination";
 import { cn } from "@/lib/utils";
 
 const SCROLL_THRESHOLD = 24;
+
+const NAV_TEXT_LINK_CLASS =
+  "rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white";
+
+const MOBILE_SECONDARY_BUTTON_CLASS =
+  "flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5";
 
 function subscribeToScroll(callback: () => void) {
   window.addEventListener("scroll", callback, { passive: true });
@@ -50,8 +58,9 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
-export function MarketingHeader() {
+export function MarketingHeader({ navState }: { navState: MarketingNavState }) {
   const t = useTranslations();
+  const dashboardHref = navState.authenticated ? navState.dashboardHref : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const isScrolled = useIsScrolled();
   const isSolid = isScrolled || menuOpen;
@@ -115,22 +124,44 @@ export function MarketingHeader() {
             <LanguageSwitcher />
             <ThemeToggle />
             <span className="mx-1.5 h-5 w-px bg-slate-200 dark:bg-white/10" aria-hidden="true" />
-            <Link
-              href="/login"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
-            >
-              {t.marketing.nav.login}
-            </Link>
-            <Link
-              href="/pricing"
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700",
-                ctaGlowClass,
-              )}
-            >
-              {t.marketing.nav.getStarted}
-              <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
-            </Link>
+            {navState.authenticated ? (
+              <>
+                <Link href="/account/security" className={NAV_TEXT_LINK_CLASS}>
+                  {t.marketing.nav.account}
+                </Link>
+                <form action={signOut}>
+                  <button type="submit" className={NAV_TEXT_LINK_CLASS}>
+                    {t.marketing.nav.signOut}
+                  </button>
+                </form>
+                <Link
+                  href={dashboardHref ?? "/pricing"}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700",
+                    ctaGlowClass,
+                  )}
+                >
+                  {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.nav.choosePlan}
+                  <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className={NAV_TEXT_LINK_CLASS}>
+                  {t.marketing.nav.login}
+                </Link>
+                <Link
+                  href="/pricing"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700",
+                    ctaGlowClass,
+                  )}
+                >
+                  {t.marketing.nav.getStarted}
+                  <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -219,24 +250,50 @@ export function MarketingHeader() {
             <ThemeToggle variant="labelled" />
           </div>
           <div className="flex flex-col gap-2.5">
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
-            >
-              {t.marketing.nav.login}
-            </Link>
-            <Link
-              href="/pricing"
-              onClick={() => setMenuOpen(false)}
-              className={cn(
-                "flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white",
-                ctaGlowClass,
-              )}
-            >
-              {t.marketing.nav.getStarted}
-              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
-            </Link>
+            {navState.authenticated ? (
+              <>
+                <Link
+                  href="/account/security"
+                  onClick={() => setMenuOpen(false)}
+                  className={MOBILE_SECONDARY_BUTTON_CLASS}
+                >
+                  {t.marketing.nav.account}
+                </Link>
+                <form action={signOut}>
+                  <button type="submit" onClick={() => setMenuOpen(false)} className={cn(MOBILE_SECONDARY_BUTTON_CLASS, "w-full")}>
+                    {t.marketing.nav.signOut}
+                  </button>
+                </form>
+                <Link
+                  href={dashboardHref ?? "/pricing"}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white",
+                    ctaGlowClass,
+                  )}
+                >
+                  {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.nav.choosePlan}
+                  <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMenuOpen(false)} className={MOBILE_SECONDARY_BUTTON_CLASS}>
+                  {t.marketing.nav.login}
+                </Link>
+                <Link
+                  href="/pricing"
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white",
+                    ctaGlowClass,
+                  )}
+                >
+                  {t.marketing.nav.getStarted}
+                  <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

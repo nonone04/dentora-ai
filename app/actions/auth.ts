@@ -15,6 +15,7 @@ import { formatDateTime } from "@/lib/format";
 import { track } from "@/lib/telemetry";
 import { REMEMBER_ME_COOKIE } from "@/lib/supabase/cookie-persistence";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolvePostAuthDestination } from "@/lib/supabase/post-auth-destination";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = { error?: string; message?: string } | undefined;
@@ -118,7 +119,11 @@ export async function signIn(
   });
   await track({ name: "Login", userId: data.user.id });
 
-  redirect(next ?? "/");
+  if (next) {
+    redirect(next);
+  }
+  const destination = await resolvePostAuthDestination(supabase, data.user.id);
+  redirect(destination.href);
 }
 
 export async function signUp(
@@ -174,7 +179,14 @@ export async function signUp(
     return { message: t.login.checkEmail };
   }
 
-  redirect(next ?? "/");
+  if (next) {
+    redirect(next);
+  }
+  if (!data.user) {
+    redirect("/");
+  }
+  const destination = await resolvePostAuthDestination(supabase, data.user.id);
+  redirect(destination.href);
 }
 
 export async function signInWithGoogle(formData: FormData) {

@@ -24,9 +24,9 @@ export default async function Home() {
     const planPricing = await getPlanPricing();
     return (
       <>
-        <MarketingHeader />
+        <MarketingHeader navState={{ authenticated: false }} />
         <MarketingHomeContent planPricing={planPricing} />
-        <MarketingFooter />
+        <MarketingFooter navState={{ authenticated: false }} />
       </>
     );
   }
@@ -49,11 +49,24 @@ export default async function Home() {
 
   // Invited staff never pay for themselves -- if there's a pending
   // invitation, let them see/accept it regardless of their own
-  // subscription status. Only bounce to /pricing when there's truly
-  // nothing else to do here. (create_clinic_with_owner also enforces this
-  // server-side, so this is UX, not the authoritative gate.)
+  // subscription status. Otherwise, a logged-in user with no clinic and no
+  // subscription just sees the same Landing page a visitor would (with nav
+  // adapted for being signed in) -- Pricing is only forced right after
+  // login (see resolvePostAuthDestination) or when they try to open a
+  // protected clinic route, never just from browsing "/".
+  // (create_clinic_with_owner also enforces the subscription requirement
+  // server-side, so that one-time login redirect is UX, not the
+  // authoritative gate.)
   if (pendingInvitations.length === 0 && !subscriptionActive) {
-    redirect("/pricing");
+    const planPricing = await getPlanPricing();
+    const navState = { authenticated: true, dashboardHref: null } as const;
+    return (
+      <>
+        <MarketingHeader navState={navState} />
+        <MarketingHomeContent planPricing={planPricing} dashboardHref={null} />
+        <MarketingFooter navState={navState} />
+      </>
+    );
   }
 
   return (

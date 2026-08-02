@@ -327,7 +327,7 @@ export function PricingContent({ planPricing }: { planPricing: Record<PlanKey, P
                           {plan.cta}
                         </PlanCheckoutButton>
                       ) : (
-                        <Link href="/login" className={ctaClassName}>
+                        <Link href="/contact" className={ctaClassName}>
                           {plan.cta}
                         </Link>
                       );

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSafeNextPath } from "@/lib/auth/safe-redirect";
 import { logSecurityEvent } from "@/lib/auth/security-events";
+import { resolvePostAuthDestination } from "@/lib/supabase/post-auth-destination";
 import { createClient } from "@/lib/supabase/server";
 import { track } from "@/lib/telemetry";
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const oauthError = searchParams.get("error");
-  const next = getSafeNextPath(searchParams.get("next")) ?? "/";
+  const next = getSafeNextPath(searchParams.get("next"));
 
   if (code && !oauthError) {
     const supabase = await createClient();
@@ -31,10 +32,11 @@ export async function GET(request: NextRequest) {
       });
       await track({ name: "Login", userId: data.user.id });
 
-      return NextResponse.redirect(`${origin}${next}`);
+      const destinationHref = next ?? (await resolvePostAuthDestination(supabase, data.user.id)).href;
+      return NextResponse.redirect(`${origin}${destinationHref}`);
     }
   }
 
-  const suffix = next !== "/" ? `&next=${encodeURIComponent(next)}` : "";
+  const suffix = next ? `&next=${encodeURIComponent(next)}` : "";
   return NextResponse.redirect(`${origin}/login?error=oauth${suffix}`);
 }

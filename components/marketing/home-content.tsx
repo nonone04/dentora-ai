@@ -9,10 +9,16 @@ import { TrustBarSection } from "@/components/marketing/sections/trust-bar-secti
 import { SectionDivider } from "@/components/marketing/motion/section-divider";
 import type { PlanKey, PlanPricing } from "@/lib/marketing/pricing-plans";
 
-export function MarketingHomeContent({ planPricing }: { planPricing: Record<PlanKey, PlanPricing> }) {
+export function MarketingHomeContent({
+  planPricing,
+  dashboardHref = null,
+}: {
+  planPricing: Record<PlanKey, PlanPricing>;
+  dashboardHref?: string | null;
+}) {
   return (
     <div className="flex flex-col">
-      <HeroSection />
+      <HeroSection dashboardHref={dashboardHref} />
       <TrustBarSection />
       <ShowcaseSections />
       <SectionDivider />

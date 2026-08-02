@@ -12,7 +12,7 @@ import { ProductFrame } from "@/components/marketing/product-frame";
 import { useTranslations } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-export function HeroSection() {
+export function HeroSection({ dashboardHref = null }: { dashboardHref?: string | null }) {
   const t = useTranslations();
 
   return (
@@ -47,13 +47,13 @@ export function HeroSection() {
             <Reveal delay={700}>
               <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row md:mt-9 md:w-auto">
                 <Link
-                  href="/pricing"
+                  href={dashboardHref ?? "/pricing"}
                   className={cn(
                     "inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 md:min-h-0 md:w-auto",
                     ctaGlowClass,
                   )}
                 >
-                  {t.marketing.home.ctaPrimary}
+                  {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.home.ctaPrimary}
                   <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
                 </Link>
                 <Link

@@ -26,18 +26,20 @@ export default async function ClinicLayout({
 
   const supabase = await createClient();
 
+  const { data: clinic } = await supabase.from("clinics").select("is_demo").eq("id", clinicId).maybeSingle();
+
   // Every clinic route lives under this layout, so this is the single
   // choke point for "no active subscription -> no dashboard access"
   // (invited staff inherit the clinic owner's status, see the
-  // clinic_has_active_subscription SQL function). Checked before the
-  // data-fetching below so a lapsed subscription short-circuits early.
-  if (!(await clinicHasActiveSubscription(supabase, clinicId))) {
+  // clinic_has_active_subscription SQL function). Demo clinics are exempt --
+  // the shared demo account (lib/demo/provision.ts) never has a Stripe
+  // subscription, and the Live Demo must work with no payment at all.
+  if (!clinic?.is_demo && !(await clinicHasActiveSubscription(supabase, clinicId))) {
     redirect("/pricing");
   }
 
-  const [{ data: profile }, { data: clinic }, notifications, unreadNotificationCount] = await Promise.all([
+  const [{ data: profile }, notifications, unreadNotificationCount] = await Promise.all([
     supabase.from("profiles").select("full_name, onboarding_tour_completed_at").eq("id", user.id).maybeSingle(),
-    supabase.from("clinics").select("is_demo").eq("id", clinicId).maybeSingle(),
     listNotificationCenterItems(supabase, { clinicId, channel: "in_app", limit: 30 }),
     countUnreadNotifications(supabase, clinicId),
   ]);

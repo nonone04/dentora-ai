@@ -8,6 +8,7 @@ const recordLoginFailureMock = vi.hoisted(() => vi.fn());
 const checkRateLimitMock = vi.hoisted(() => vi.fn());
 const logSecurityEventMock = vi.hoisted(() => vi.fn());
 const trackMock = vi.hoisted(() => vi.fn());
+const resolvePostAuthDestinationMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() =>
   vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
@@ -15,6 +16,7 @@ const redirectMock = vi.hoisted(() =>
 );
 
 vi.mock("next/navigation", () => ({ redirect: redirectMock }));
+vi.mock("@/lib/supabase/post-auth-destination", () => ({ resolvePostAuthDestination: resolvePostAuthDestinationMock }));
 vi.mock("next/headers", () => ({
   headers: vi.fn().mockResolvedValue({
     get: (key: string) => (key === "host" ? "dentora.test" : key === "user-agent" ? "test-agent" : null),
@@ -52,6 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   checkRateLimitMock.mockReturnValue(true);
   isAccountLockedMock.mockReturnValue(false);
+  resolvePostAuthDestinationMock.mockResolvedValue({ kind: "pricing", href: "/pricing" });
 });
 
 describe("signIn: no information leakage", () => {
@@ -96,17 +99,27 @@ describe("signIn: lockout", () => {
 });
 
 describe("signIn: success", () => {
-  it("redirects home and does not record a failure", async () => {
+  it("redirects to the resolved post-auth destination and does not record a failure", async () => {
     signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    resolvePostAuthDestinationMock.mockResolvedValue({ kind: "pricing", href: "/pricing" });
     await expect(signIn(undefined, formData({ email: "user@example.com", password: "correct" }))).rejects.toThrow(
-      "REDIRECT:/",
+      "REDIRECT:/pricing",
     );
+    expect(resolvePostAuthDestinationMock).toHaveBeenCalledWith(expect.anything(), "user-1");
     expect(recordLoginFailureMock).not.toHaveBeenCalled();
     expect(logSecurityEventMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ eventType: "login_succeeded", userId: "user-1" }),
     );
     expect(trackMock).toHaveBeenCalledWith(expect.objectContaining({ name: "Login", userId: "user-1" }));
+  });
+
+  it("redirects straight to the clinic when the user already has an active subscription", async () => {
+    signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    resolvePostAuthDestinationMock.mockResolvedValue({ kind: "clinic", href: "/clinic/abc-123" });
+    await expect(signIn(undefined, formData({ email: "user@example.com", password: "correct" }))).rejects.toThrow(
+      "REDIRECT:/clinic/abc-123",
+    );
   });
 
   it("redirects to /verify-email on an unconfirmed account without recording a failure", async () => {
@@ -124,11 +137,12 @@ describe("signIn: success", () => {
     ).rejects.toThrow("REDIRECT:/checkout/standard");
   });
 
-  it("ignores an off-site `next` value and falls back to the dashboard", async () => {
+  it("ignores an off-site `next` value and falls back to the resolved post-auth destination", async () => {
     signInWithPasswordMock.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    resolvePostAuthDestinationMock.mockResolvedValue({ kind: "pricing", href: "/pricing" });
     await expect(
       signIn(undefined, formData({ email: "user@example.com", password: "correct", next: "https://evil.example/phish" })),
-    ).rejects.toThrow("REDIRECT:/");
+    ).rejects.toThrow("REDIRECT:/pricing");
   });
 });
 
@@ -175,6 +189,14 @@ describe("signUp", () => {
         formData({ email: "new@example.com", password: "Str0ngP@ssword123", fullName: "New User", next: "/checkout/standard" }),
       ),
     ).rejects.toThrow("REDIRECT:/checkout/standard");
+  });
+
+  it("redirects to the resolved post-auth destination when signup returns a session and no next", async () => {
+    signUpMock.mockResolvedValue({ data: { session: { access_token: "t" }, user: { id: "user-1" } }, error: null });
+    resolvePostAuthDestinationMock.mockResolvedValue({ kind: "pricing", href: "/pricing" });
+    await expect(
+      signUp(undefined, formData({ email: "new@example.com", password: "Str0ngP@ssword123", fullName: "New User" })),
+    ).rejects.toThrow("REDIRECT:/pricing");
   });
 
   it("rejects a weak password before ever calling signUp", async () => {

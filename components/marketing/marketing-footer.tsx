@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/marketing/logo";
 import { useTranslations } from "@/lib/i18n";
+import type { MarketingNavState } from "@/lib/supabase/post-auth-destination";
 
-export function MarketingFooter() {
+export function MarketingFooter({ navState }: { navState: MarketingNavState }) {
   const t = useTranslations();
+  const dashboardHref = navState.authenticated ? navState.dashboardHref : null;
   const year = new Date().getFullYear();
 
   const trustItems = [
@@ -54,12 +57,39 @@ export function MarketingFooter() {
           <div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">{t.marketing.footer.account}</span>
             <nav className="mt-4 flex flex-col gap-3 text-sm">
-              <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.login}
-              </Link>
-              <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.getStarted}
-              </Link>
+              {navState.authenticated ? (
+                <>
+                  <Link
+                    href="/account/security"
+                    className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  >
+                    {t.marketing.nav.account}
+                  </Link>
+                  <form action={signOut}>
+                    <button
+                      type="submit"
+                      className="text-start text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    >
+                      {t.marketing.nav.signOut}
+                    </button>
+                  </form>
+                  <Link
+                    href={dashboardHref ?? "/pricing"}
+                    className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  >
+                    {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.nav.choosePlan}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                    {t.marketing.nav.login}
+                  </Link>
+                  <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                    {t.marketing.nav.getStarted}
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>

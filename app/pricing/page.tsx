@@ -3,6 +3,7 @@ import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { PricingContent } from "@/components/marketing/pricing-content";
 import { getPlanPricing } from "@/lib/marketing/pricing-plans";
+import { getMarketingNavState } from "@/lib/supabase/post-auth-destination";
 
 export const metadata: Metadata = {
   title: "Pricing -- Dentora AI",
@@ -10,12 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PricingPage() {
-  const planPricing = await getPlanPricing();
+  const [planPricing, navState] = await Promise.all([getPlanPricing(), getMarketingNavState()]);
   return (
     <>
-      <MarketingHeader />
+      <MarketingHeader navState={navState} />
       <PricingContent planPricing={planPricing} />
-      <MarketingFooter />
+      <MarketingFooter navState={navState} />
     </>
   );
 }
