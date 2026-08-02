@@ -15,10 +15,12 @@ import { FeatureUsageBeacon } from "@/components/telemetry/feature-usage-beacon"
 import { getClinicAISettings } from "@/lib/ai/settings";
 import { formatDateTime } from "@/lib/format";
 import { getServerDictionary, getServerLocale } from "@/lib/i18n/server";
-import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
+import { DEFAULT_REMINDER_HOURS_BEFORE, DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
+import { getPhoneNumberProfile } from "@/lib/whatsapp/client";
+import type { WhatsAppPhoneNumberProfile } from "@/lib/whatsapp/types";
 
 type ConversationRow = {
   id: string;
@@ -58,6 +60,20 @@ export default async function SettingsPage({
   const conversations = (conversationsData ?? []) as unknown as ConversationRow[];
   const notificationSettings = getClinicNotificationSettings(clinic?.settings ?? null);
   const aiSettings = getClinicAISettings(clinic?.settings ?? null);
+
+  // The Settings page's WhatsApp card shows connection status up front (no button
+  // click required) -- webhook status is a config-presence heuristic (Meta doesn't
+  // expose a cheap "is this webhook actually subscribed" check), while the business
+  // name/API status come from a live Graph API call, best-effort here so a slow/down
+  // Graph API never blocks the rest of the settings page from rendering.
+  const webhookConfigured = !!process.env.WHATSAPP_VERIFY_TOKEN && !!process.env.WHATSAPP_APP_SECRET;
+  const whatsappAccessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const whatsappPhoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  let whatsappProfile: WhatsAppPhoneNumberProfile | null = null;
+  if (whatsappAccessToken && whatsappPhoneNumberId) {
+    const profileResult = await getPhoneNumberProfile({ accessToken: whatsappAccessToken, phoneNumberId: whatsappPhoneNumberId });
+    if (profileResult.success) whatsappProfile = profileResult.profile;
+  }
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
@@ -101,7 +117,13 @@ export default async function SettingsPage({
           <NotificationSettingsForm
             clinicId={clinicId}
             reminderHoursBefore={notificationSettings.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE}
+            secondaryReminderHoursBefore={
+              notificationSettings.secondaryReminderHoursBefore === null
+                ? null
+                : (notificationSettings.secondaryReminderHoursBefore ?? DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE)
+            }
             sendConfirmations={notificationSettings.sendConfirmations ?? true}
+            googleReviewUrl={notificationSettings.googleReviewUrl ?? null}
             channelEmail={notificationSettings.channels?.email ?? true}
             channelInApp={notificationSettings.channels?.inApp ?? true}
             categoryAppointmentReminders={notificationSettings.categories?.appointmentReminders ?? true}
@@ -122,6 +144,8 @@ export default async function SettingsPage({
             initialConnected={!!clinic?.whatsapp_phone_number_id}
             initialDisplayNumber={clinic?.whatsapp_number ?? null}
             initialPhoneNumberId={clinic?.whatsapp_phone_number_id ?? null}
+            webhookConfigured={webhookConfigured}
+            initialProfile={whatsappProfile}
           />
         </CardContent>
       </Card>

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /**
  * Internal test harness for the orchestration loop -- NOT a
  * patient-facing endpoint and not a WhatsApp webhook. There is no
- * user session for this (same reasoning as /api/notifications/process),
+ * user session for this (same reasoning as /api/notifications/dispatch),
  * so it's protected by a shared secret instead of Supabase auth.
  */
 export async function POST(request: Request) {

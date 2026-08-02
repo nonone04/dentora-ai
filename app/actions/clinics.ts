@@ -163,6 +163,18 @@ export async function updateNotificationSettings(
     return { error: t.validation.reminderHoursInvalid };
   }
 
+  let secondaryReminderHoursBefore: number | null = null;
+  if (formData.get("secondaryReminderEnabled") === "on") {
+    secondaryReminderHoursBefore = Number(formData.get("secondaryReminderHoursBefore"));
+    if (!Number.isFinite(secondaryReminderHoursBefore) || secondaryReminderHoursBefore < 0) {
+      const t = await getServerDictionary();
+      return { error: t.validation.reminderHoursInvalid };
+    }
+  }
+
+  const googleReviewUrlRaw = formData.get("googleReviewUrl");
+  const googleReviewUrl = typeof googleReviewUrlRaw === "string" && googleReviewUrlRaw.trim() ? googleReviewUrlRaw.trim() : null;
+
   const sendConfirmations = formData.get("sendConfirmations") === "on";
   const channels = {
     email: formData.get("channelEmail") === "on",
@@ -184,7 +196,7 @@ export async function updateNotificationSettings(
     .update({
       settings: {
         ...settings,
-        notifications: { reminderHoursBefore, sendConfirmations, channels, categories },
+        notifications: { reminderHoursBefore, secondaryReminderHoursBefore, sendConfirmations, channels, categories, googleReviewUrl },
       },
     })
     .eq("id", clinicId);

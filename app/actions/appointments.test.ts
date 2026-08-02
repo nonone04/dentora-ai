@@ -4,24 +4,16 @@ import { en } from "@/lib/i18n/dictionaries/en";
 const requireUserMock = vi.hoisted(() => vi.fn());
 const logAuditEventMock = vi.hoisted(() => vi.fn());
 const trackMock = vi.hoisted(() => vi.fn());
-const scheduleAppointmentReminderMock = vi.hoisted(() => vi.fn());
-const sendAppointmentConfirmationMock = vi.hoisted(() => vi.fn());
-const skipPendingRemindersMock = vi.hoisted(() => vi.fn());
+const scheduleAppointmentRemindersMock = vi.hoisted(() => vi.fn());
+const transitionAppointmentMock = vi.hoisted(() => vi.fn());
 const revalidatePathMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 vi.mock("@/lib/i18n/server", () => ({ getServerDictionary: () => Promise.resolve(en) }));
 vi.mock("@/lib/audit/log", () => ({ logAuditEvent: logAuditEventMock }));
 vi.mock("@/lib/telemetry", () => ({ track: trackMock }));
-vi.mock("@/lib/notifications/schedule", () => ({
-  scheduleAppointmentReminder: scheduleAppointmentReminderMock,
-  sendAppointmentConfirmation: sendAppointmentConfirmationMock,
-  skipPendingReminders: skipPendingRemindersMock,
-}));
-vi.mock("@/lib/notifications/settings", () => ({
-  DEFAULT_REMINDER_HOURS_BEFORE: 24,
-  getClinicNotificationSettings: () => ({ reminderHoursBefore: 24, sendConfirmations: true }),
-}));
+vi.mock("@/lib/notifications", () => ({ scheduleAppointmentReminders: scheduleAppointmentRemindersMock }));
+vi.mock("@/lib/ai/appointments", () => ({ transitionAppointment: transitionAppointmentMock }));
 vi.mock("@/lib/supabase/auth", () => ({ requireUser: requireUserMock }));
 
 type TableResult = { data: unknown; error: unknown };
@@ -53,15 +45,12 @@ function formData(fields: Record<string, string>) {
 beforeEach(() => {
   vi.clearAllMocks();
   requireUserMock.mockResolvedValue({ id: "user-1" });
+  transitionAppointmentMock.mockResolvedValue({ ok: true, fromStatus: "scheduled", toStatus: "confirmed" });
 });
 
 describe("createAppointment", () => {
   it("fires Appointment Created with source: staff on success", async () => {
-    client = makeClient({
-      appointments: { data: { id: "appt-1" }, error: null },
-      patients: { data: { reminder_opt_in: true, preferred_contact_channel: "email" }, error: null },
-      clinics: { data: { settings: {} }, error: null },
-    });
+    client = makeClient({ appointments: { data: { id: "appt-1" }, error: null } });
 
     const result = await createAppointment(
       "clinic-1",
@@ -70,6 +59,10 @@ describe("createAppointment", () => {
     );
 
     expect(result).toEqual({ success: true });
+    expect(scheduleAppointmentRemindersMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" }),
+    );
     expect(trackMock).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Appointment Created", userId: "user-1", clinicId: "clinic-1", properties: { source: "staff" } }),
     );
@@ -85,20 +78,21 @@ describe("createAppointment", () => {
     );
 
     expect(trackMock).not.toHaveBeenCalled();
+    expect(scheduleAppointmentRemindersMock).not.toHaveBeenCalled();
   });
 });
 
 describe("updateAppointmentStatus", () => {
-  it("fires Appointment Updated, and Appointment Cancelled only when cancelling", async () => {
-    client = makeClient({
-      appointments: {
-        data: { id: "appt-1", patient_id: "patient-1", start_at: "2026-08-01T10:00:00.000Z", patients: null },
-        error: null,
-      },
-    });
+  it("transitions via the Appointment Lifecycle Engine, and fires Appointment Cancelled only when cancelling", async () => {
+    transitionAppointmentMock.mockResolvedValue({ ok: true, fromStatus: "confirmed", toStatus: "cancelled" });
+    client = makeClient({});
 
     await updateAppointmentStatus("clinic-1", "appt-1", undefined, formData({ status: "cancelled" }));
 
+    expect(transitionAppointmentMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ clinicId: "clinic-1", appointmentId: "appt-1", event: "cancel", actor: "staff", actorId: "user-1" }),
+    );
     expect(trackMock).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Appointment Updated", properties: { status: "cancelled" } }),
     );
@@ -106,16 +100,32 @@ describe("updateAppointmentStatus", () => {
   });
 
   it("does not fire Appointment Cancelled for a non-cancelling status change", async () => {
-    client = makeClient({
-      appointments: {
-        data: { id: "appt-1", patient_id: "patient-1", start_at: "2026-08-01T10:00:00.000Z", patients: null },
-        error: null,
-      },
-    });
+    client = makeClient({});
 
-    await updateAppointmentStatus("clinic-1", "appt-1", undefined, formData({ status: "scheduled" }));
+    await updateAppointmentStatus("clinic-1", "appt-1", undefined, formData({ status: "completed" }));
 
+    expect(transitionAppointmentMock).toHaveBeenCalledWith(client, expect.objectContaining({ event: "complete" }));
     expect(trackMock).toHaveBeenCalledWith(expect.objectContaining({ name: "Appointment Updated" }));
     expect(trackMock).not.toHaveBeenCalledWith(expect.objectContaining({ name: "Appointment Cancelled" }));
+  });
+
+  it("rejects a status with no corresponding lifecycle event (e.g. reverting to scheduled) without calling the engine", async () => {
+    client = makeClient({});
+
+    const result = await updateAppointmentStatus("clinic-1", "appt-1", undefined, formData({ status: "scheduled" }));
+
+    expect(result).toEqual({ error: en.validation.invalidStatus });
+    expect(transitionAppointmentMock).not.toHaveBeenCalled();
+    expect(trackMock).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a not-found error without tracking anything when the appointment no longer exists", async () => {
+    transitionAppointmentMock.mockResolvedValue({ ok: false, reason: "not_found" });
+    client = makeClient({});
+
+    const result = await updateAppointmentStatus("clinic-1", "appt-1", undefined, formData({ status: "confirmed" }));
+
+    expect(result).toEqual({ error: en.calendar.conflict.notFound });
+    expect(trackMock).not.toHaveBeenCalled();
   });
 });

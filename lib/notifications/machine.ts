@@ -8,6 +8,7 @@ export const DELIVERY_EVENTS = [
   "skip",
   "mark_delivered",
   "mark_read",
+  "mark_failed",
 ] as const;
 
 export type DeliveryEvent = (typeof DELIVERY_EVENTS)[number];
@@ -28,7 +29,12 @@ export type DeliveryTransitionResult =
  * "sent" is a valid terminal resting state on its own -- not every
  * channel/provider reports delivered/read receipts, so mark_delivered/
  * mark_read are optional next steps a webhook could apply later, not a
- * requirement for a delivery to be considered done.
+ * requirement for a delivery to be considered done. mark_failed covers
+ * a provider reporting a *post-send* failure (e.g. Meta's WhatsApp
+ * status webhook reporting "failed" for a message that initially
+ * appeared to send -- an invalid/unreachable number, for instance) --
+ * distinct from the sending -> exhaust path, which only ever fires for
+ * a failure the provider reported synchronously at send time.
  */
 const TRANSITIONS: Partial<Record<NotificationDeliveryStatus, Partial<Record<DeliveryEvent, NotificationDeliveryStatus>>>> = {
   pending: {
@@ -43,9 +49,11 @@ const TRANSITIONS: Partial<Record<NotificationDeliveryStatus, Partial<Record<Del
   sent: {
     mark_delivered: "delivered",
     mark_read: "read",
+    mark_failed: "failed",
   },
   delivered: {
     mark_read: "read",
+    mark_failed: "failed",
   },
   read: {},
   failed: {},

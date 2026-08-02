@@ -18,7 +18,9 @@ export type NotificationMessage = {
   html?: string;
 };
 
-export type NotificationResult = { success: true } | { success: false; error: string };
+export type NotificationResult =
+  | { success: true; providerMessageId?: string }
+  | { success: false; error: string };
 
 export interface NotificationProvider {
   readonly channel: NotificationChannel;

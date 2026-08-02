@@ -4,18 +4,14 @@ const requireUserMock = vi.hoisted(() => vi.fn());
 const logAuditEventMock = vi.hoisted(() => vi.fn());
 const trackMock = vi.hoisted(() => vi.fn());
 const recordLifecycleEventMock = vi.hoisted(() => vi.fn());
-const scheduleAppointmentReminderMock = vi.hoisted(() => vi.fn());
+const scheduleAppointmentRemindersMock = vi.hoisted(() => vi.fn());
 const revalidatePathMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 vi.mock("@/lib/audit/log", () => ({ logAuditEvent: logAuditEventMock }));
 vi.mock("@/lib/telemetry", () => ({ track: trackMock }));
 vi.mock("@/lib/ai/appointments", () => ({ recordLifecycleEvent: recordLifecycleEventMock }));
-vi.mock("@/lib/notifications/schedule", () => ({ scheduleAppointmentReminder: scheduleAppointmentReminderMock }));
-vi.mock("@/lib/notifications/settings", () => ({
-  DEFAULT_REMINDER_HOURS_BEFORE: 24,
-  getClinicNotificationSettings: () => ({ reminderHoursBefore: 24 }),
-}));
+vi.mock("@/lib/notifications", () => ({ scheduleAppointmentReminders: scheduleAppointmentRemindersMock }));
 vi.mock("@/lib/supabase/auth", () => ({ requireUser: requireUserMock }));
 
 type TableResult = { data: unknown; error: unknown };
@@ -64,13 +60,15 @@ describe("approveDraft", () => {
         error: null,
       },
       appointments: { data: { id: "appt-1" }, error: null },
-      patients: { data: { reminder_opt_in: true, preferred_contact_channel: "email" }, error: null },
-      clinics: { data: { settings: {} }, error: null },
     });
 
     const result = await approveDraft("clinic-1", "draft-1", undefined, new FormData());
 
     expect(result).toBeUndefined();
+    expect(scheduleAppointmentRemindersMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" }),
+    );
     expect(trackMock).toHaveBeenCalledWith(expect.objectContaining({ name: "AI Suggestion Accepted", userId: "user-1", clinicId: "clinic-1" }));
     expect(trackMock).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Appointment Created", userId: "user-1", clinicId: "clinic-1", properties: { source: "ai_assistant" } }),

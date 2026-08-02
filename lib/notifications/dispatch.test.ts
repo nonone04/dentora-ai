@@ -150,6 +150,7 @@ const BASE_DELIVERY: Row = {
   sent_at: null,
   delivered_at: null,
   read_at: null,
+  provider_message_id: null,
   archived_at: null,
   version: 1,
   created_at: new Date().toISOString(),
@@ -188,6 +189,17 @@ describe("sendDelivery: success", () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock.mock.calls[0][0]).toMatchObject({ to: "clinic@example.com", body: expect.stringContaining("Patient upset") });
     expect(fake.deliveriesTable.rows.get("d1")).toMatchObject({ status: "sent", attempts: 1 });
+  });
+
+  it("persists the provider's message id when the provider returns one (e.g. WhatsApp's wamid)", async () => {
+    sendMock.mockResolvedValue({ success: true, providerMessageId: "wamid.abc123" });
+    const fake = makeFakeSupabase({ deliveries: [BASE_DELIVERY], events: [EVENT] });
+    const delivery = parseNotificationDeliveryRow(BASE_DELIVERY as never);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await sendDelivery(fake.client as any, delivery);
+
+    expect(fake.deliveriesTable.rows.get("d1")).toMatchObject({ provider_message_id: "wamid.abc123" });
   });
 });
 

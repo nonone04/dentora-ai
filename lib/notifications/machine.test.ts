@@ -27,6 +27,11 @@ describe("transitionDelivery: valid paths", () => {
   it("pending -> failed on skip (e.g. appointment cancelled)", () => {
     expect(transitionDelivery("pending", "skip")).toEqual({ ok: true, toStatus: "failed" });
   });
+
+  it("sent -> failed and delivered -> failed on mark_failed (a post-send provider failure report)", () => {
+    expect(transitionDelivery("sent", "mark_failed")).toEqual({ ok: true, toStatus: "failed" });
+    expect(transitionDelivery("delivered", "mark_failed")).toEqual({ ok: true, toStatus: "failed" });
+  });
 });
 
 describe("transitionDelivery: invalid paths", () => {

@@ -20,6 +20,8 @@ export const EVENT_TYPE_TO_CATEGORY: Record<NotificationEventType, NotificationC
   appointment_cancelled: "appointments",
   appointment_rescheduled: "appointments",
   appointment_reminder: "appointments",
+  appointment_completed: "appointments",
+  custom_message: "appointments",
   conversation_escalated: "ai",
 };
 

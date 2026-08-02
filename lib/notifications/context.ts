@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isResponseLanguage, type ResponseLanguage } from "@/lib/ai/nlu/language";
 import type { NotificationChannel } from "@/lib/notifications/provider";
-import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
+import { DEFAULT_REMINDER_HOURS_BEFORE, DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
 
 export type NotificationContextPatient = {
   id: string;
@@ -28,7 +28,10 @@ export type NotificationContext = {
   timezone: string;
   defaultLanguage: ResponseLanguage;
   reminderHoursBefore: number;
+  /** null when the clinic has explicitly opted out of the second reminder -- see lib/notifications/settings.ts. */
+  secondaryReminderHoursBefore: number | null;
   sendConfirmations: boolean;
+  googleReviewUrl: string | null;
   /** Notification preference gates -- default true when unset, see lib/notifications/settings.ts. Consumed by engine.ts's buildDeliveryPlans. */
   emailChannelEnabled: boolean;
   inAppChannelEnabled: boolean;
@@ -168,7 +171,12 @@ export async function loadNotificationContext(
     timezone: (clinic.timezone as string) ?? "UTC",
     defaultLanguage,
     reminderHoursBefore: notificationSettings.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
+    secondaryReminderHoursBefore:
+      notificationSettings.secondaryReminderHoursBefore === null
+        ? null
+        : (notificationSettings.secondaryReminderHoursBefore ?? DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE),
     sendConfirmations: notificationSettings.sendConfirmations !== false,
+    googleReviewUrl: notificationSettings.googleReviewUrl ?? null,
     emailChannelEnabled: notificationSettings.channels?.email !== false,
     inAppChannelEnabled: notificationSettings.channels?.inApp !== false,
     appointmentRemindersEnabled: notificationSettings.categories?.appointmentReminders !== false,

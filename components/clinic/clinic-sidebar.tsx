@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Inbox,
   LayoutDashboard,
+  MessageCircle,
   ScanSearch,
   Settings,
   Stethoscope,
@@ -39,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: (t) => t.nav.dentists, href: "/dentists", icon: Stethoscope },
   { label: (t) => t.nav.services, href: "/services", icon: Wrench },
   { label: (t) => t.nav.knowledgeBase, href: "/knowledge-base", icon: BookOpen },
+  { label: (t) => t.nav.communications, href: "/communications", icon: MessageCircle },
   { label: (t) => t.nav.staff, href: "/staff", icon: UsersRound, roles: ["owner", "admin"], tourId: "staff" },
   { label: (t) => t.nav.settings, href: "/settings", icon: Settings, roles: ["owner", "admin"], tourId: "settings" },
 ];

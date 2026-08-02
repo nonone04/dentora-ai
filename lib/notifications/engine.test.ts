@@ -12,9 +12,11 @@ const {
   createNotificationEvent,
   notifyAppointmentBooked,
   notifyAppointmentCancelled,
+  notifyAppointmentCompleted,
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
   notifyEscalation,
+  scheduleAppointmentReminders,
 } = await import("@/lib/notifications/engine");
 
 /**
@@ -409,6 +411,120 @@ describe("createNotificationEvent: patient fan-out", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const outcome = await createNotificationEvent(fake.client as any, { clinicId: "clinic-1", type: "appointment_confirmed", appointmentId: "appt-1" });
     expect(outcome?.deliveriesCreated).toBe(0);
+  });
+});
+
+describe("scheduleAppointmentReminders: dual (24h/2h-style) reminders", () => {
+  it("schedules two independent reminder events when primary and secondary hours differ", async () => {
+    const fake = makeFakeSupabase({
+      clinic: { ...CLINIC, settings: { notifications: { reminderHoursBefore: 24, secondaryReminderHoursBefore: 2 } } },
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: PATIENT,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await scheduleAppointmentReminders(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" });
+
+    const reminderEvents = fake.eventsTable.rows.filter((r) => r.type === "appointment_reminder");
+    expect(reminderEvents).toHaveLength(2);
+    const scheduledTimes = fake.deliveriesTable.rows.map((d) => d.scheduled_for as string).sort();
+    expect(scheduledTimes[0]).not.toBe(scheduledTimes[1]);
+  });
+
+  it("schedules only the primary reminder when the clinic opted out of the secondary one", async () => {
+    const fake = makeFakeSupabase({
+      clinic: { ...CLINIC, settings: { notifications: { reminderHoursBefore: 24, secondaryReminderHoursBefore: null } } },
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: PATIENT,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await scheduleAppointmentReminders(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" });
+
+    expect(fake.eventsTable.rows.filter((r) => r.type === "appointment_reminder")).toHaveLength(1);
+  });
+
+  it("defaults the secondary reminder to 2h before when unset, without any explicit opt-in", async () => {
+    const fake = makeFakeSupabase({
+      clinic: { ...CLINIC, settings: { notifications: { reminderHoursBefore: 24 } } },
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: PATIENT,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await scheduleAppointmentReminders(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" });
+
+    expect(fake.eventsTable.rows.filter((r) => r.type === "appointment_reminder")).toHaveLength(2);
+  });
+
+  it("does not duplicate a reminder when primary and secondary hours happen to coincide", async () => {
+    const fake = makeFakeSupabase({
+      clinic: { ...CLINIC, settings: { notifications: { reminderHoursBefore: 2, secondaryReminderHoursBefore: 2 } } },
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: PATIENT,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await scheduleAppointmentReminders(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" });
+
+    expect(fake.eventsTable.rows.filter((r) => r.type === "appointment_reminder")).toHaveLength(1);
+  });
+});
+
+describe("notifyAppointmentCompleted", () => {
+  it("logs an appointment_completed event and sends it on the patient's preferred channel", async () => {
+    const fake = makeFakeSupabase({
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(-1), end_at: futureIso(-0.5) },
+      patient: PATIENT,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await notifyAppointmentCompleted(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" });
+
+    const event = fake.eventsTable.rows.find((r) => r.type === "appointment_completed");
+    expect(event).toBeTruthy();
+    const delivery = fake.deliveriesTable.rows.find((d) => d.notification_event_id === event!.id);
+    expect(delivery).toMatchObject({ channel: "email", status: "sent" });
+  });
+});
+
+describe("createNotificationEvent: channelOverride (manual dashboard sends)", () => {
+  it("forces delivery on the given channel even when it differs from the patient's preferred channel", async () => {
+    const fake = makeFakeSupabase({
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: PATIENT, // preferred_contact_channel: "email"
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const outcome = await createNotificationEvent(fake.client as any, {
+      clinicId: "clinic-1",
+      type: "appointment_reminder",
+      appointmentId: "appt-1",
+      patientId: "patient-1",
+      channelOverride: "whatsapp",
+    });
+
+    expect(outcome?.deliveriesCreated).toBe(1);
+    expect(fake.deliveriesTable.rows[0]).toMatchObject({ channel: "whatsapp", recipient_address: "+212600000000" });
+  });
+
+  it("bypasses the automatic-send preference gates (sendConfirmations/reminderOptIn) when a channelOverride is given", async () => {
+    const fake = makeFakeSupabase({
+      clinic: { ...CLINIC, settings: { notifications: { sendConfirmations: false } } },
+      appointment: { id: "appt-1", patient_id: "patient-1", start_at: futureIso(48), end_at: futureIso(48.5) },
+      patient: { ...PATIENT, reminder_opt_in: false },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const outcome = await createNotificationEvent(fake.client as any, {
+      clinicId: "clinic-1",
+      type: "appointment_confirmed",
+      appointmentId: "appt-1",
+      patientId: "patient-1",
+      channelOverride: "whatsapp",
+    });
+
+    expect(outcome?.deliveriesCreated).toBe(1);
   });
 });
 

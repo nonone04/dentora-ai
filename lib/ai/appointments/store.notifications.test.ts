@@ -5,11 +5,13 @@ type Row = Record<string, unknown>;
 const notifyAppointmentConfirmedMock = vi.hoisted(() => vi.fn());
 const notifyAppointmentCancelledMock = vi.hoisted(() => vi.fn());
 const notifyAppointmentRescheduledMock = vi.hoisted(() => vi.fn());
+const notifyAppointmentCompletedMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/notifications", () => ({
   notifyAppointmentConfirmed: notifyAppointmentConfirmedMock,
   notifyAppointmentCancelled: notifyAppointmentCancelledMock,
   notifyAppointmentRescheduled: notifyAppointmentRescheduledMock,
+  notifyAppointmentCompleted: notifyAppointmentCompletedMock,
 }));
 
 // The Patient Intelligence Engine hook runs alongside the notification hook -- letting it hit the real
@@ -139,6 +141,7 @@ beforeEach(() => {
   notifyAppointmentConfirmedMock.mockReset();
   notifyAppointmentCancelledMock.mockReset();
   notifyAppointmentRescheduledMock.mockReset();
+  notifyAppointmentCompletedMock.mockReset();
 });
 
 describe("transitionAppointment: Notification & Communication Platform wiring", () => {
@@ -200,6 +203,18 @@ describe("transitionAppointment: Notification & Communication Platform wiring", 
     );
   });
 
+  it("notifies the patient (thank-you + review request) on complete", async () => {
+    const fake = makeFakeSupabase({ id: "appt-1", clinic_id: "clinic-1", status: "confirmed", patient_id: "patient-1" });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await transitionAppointment(fake.client as any, { clinicId: "clinic-1", appointmentId: "appt-1", event: "complete", actor: "staff" });
+
+    expect(notifyAppointmentCompletedMock).toHaveBeenCalledWith(
+      fake.client,
+      expect.objectContaining({ clinicId: "clinic-1", appointmentId: "appt-1", patientId: "patient-1" }),
+    );
+  });
+
   it("does not fire any notification for events with no patient-facing template (e.g. check_in)", async () => {
     const fake = makeFakeSupabase({ id: "appt-1", clinic_id: "clinic-1", status: "confirmed", patient_id: "patient-1" });
 
@@ -209,6 +224,7 @@ describe("transitionAppointment: Notification & Communication Platform wiring", 
     expect(notifyAppointmentConfirmedMock).not.toHaveBeenCalled();
     expect(notifyAppointmentCancelledMock).not.toHaveBeenCalled();
     expect(notifyAppointmentRescheduledMock).not.toHaveBeenCalled();
+    expect(notifyAppointmentCompletedMock).not.toHaveBeenCalled();
   });
 
   it("no duplicate notifications: a repeated confirm event only notifies once, since the second call is rejected before the hook ever runs", async () => {

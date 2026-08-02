@@ -1,5 +1,7 @@
 import type { ResponseLanguage } from "@/lib/ai/nlu/language";
 import type { NotificationDeliveryChannel, NotificationEventType } from "@/lib/notifications/types";
+import { formatAppointmentDate, formatAppointmentTime, renderWhatsAppMessage } from "@/lib/whatsapp/templates";
+import type { WhatsAppMessageType } from "@/lib/whatsapp/types";
 
 export type TemplateData = {
   clinicName: string;
@@ -10,6 +12,10 @@ export type TemplateData = {
   startAt?: string | null;
   timezone?: string;
   reason?: string | null;
+  /** appointment_completed only -- omitted from the message entirely when unset (see lib/notifications/settings.ts's googleReviewUrl). */
+  reviewUrl?: string | null;
+  /** custom_message only -- the staff-composed free text, passed straight through instead of built from a template. */
+  customBody?: string | null;
 };
 
 export type RenderedTemplate = { subject: string | null; body: string };
@@ -129,6 +135,37 @@ const TEMPLATES: Record<NotificationEventType, Record<ResponseLanguage, Template
       }`,
     }),
   },
+  appointment_completed: {
+    en: (data) => ({
+      subject: `Thank you for visiting ${data.clinicName}`,
+      body: `Hi ${data.patientName ?? "there"}, thank you for visiting ${data.clinicName}${
+        data.dentistName ? ` and seeing ${data.dentistName}` : ""
+      }. We hope you had a great experience.${
+        data.reviewUrl ? ` If you have a moment, we'd appreciate a quick review: ${data.reviewUrl}` : ""
+      }`,
+    }),
+    fr: (data) => ({
+      subject: `Merci de votre visite chez ${data.clinicName}`,
+      body: `Bonjour ${data.patientName ?? ""}, merci de votre visite chez ${data.clinicName}${
+        data.dentistName ? ` et d'avoir consulte ${data.dentistName}` : ""
+      }. Nous esperons que vous avez passe un bon moment.${
+        data.reviewUrl ? ` Si vous avez un instant, un avis serait tres apprecie : ${data.reviewUrl}` : ""
+      }`,
+    }),
+    ar: (data) => ({
+      subject: `شكراً لزيارتك ${data.clinicName}`,
+      body: `مرحباً ${data.patientName ?? ""}، شكراً لزيارتك ${data.clinicName}${
+        data.dentistName ? ` ومقابلة ${data.dentistName}` : ""
+      }. نأمل أن تكون تجربتك جيدة.${data.reviewUrl ? ` إذا سمح وقتك، سنكون ممتنين لتقييمك: ${data.reviewUrl}` : ""}`,
+    }),
+  },
+  custom_message: {
+    // Never actually invoked via this table -- renderNotificationTemplate short-circuits custom_message
+    // to data.customBody before reaching TEMPLATES. Present only to satisfy Record<NotificationEventType, ...>.
+    en: (data) => ({ subject: "Message from your clinic", body: data.customBody ?? "" }),
+    fr: (data) => ({ subject: "Message de votre clinique", body: data.customBody ?? "" }),
+    ar: (data) => ({ subject: "رسالة من عيادتك", body: data.customBody ?? "" }),
+  },
   conversation_escalated: {
     en: (data) => ({
       subject: `${data.clinicName}: AI assistant needs staff attention`,
@@ -147,11 +184,25 @@ const TEMPLATES: Record<NotificationEventType, Record<ResponseLanguage, Template
   },
 };
 
+/** Which of lib/whatsapp/templates.ts's branded builders a given event type maps to, when the resolved channel is whatsapp. Event types with no entry (appointment_booked, conversation_escalated -- both staff-only, never sent via whatsapp; custom_message -- handled separately below) fall through to the shared TEMPLATES table above. */
+const WHATSAPP_TEMPLATE_TYPE_BY_EVENT: Partial<Record<NotificationEventType, WhatsAppMessageType>> = {
+  appointment_confirmed: "confirmation",
+  appointment_cancelled: "cancellation",
+  appointment_rescheduled: "reschedule",
+  appointment_reminder: "reminder",
+  appointment_completed: "completed",
+};
+
 /**
  * Renders the template for one (event type, channel, language) combo.
- * Channel only affects whether a subject is surfaced -- email is the
- * only channel with a distinct subject line; sms/whatsapp/in_app just
- * get the body (already fully self-describing on its own).
+ * For every channel but whatsapp, this is just the shared TEMPLATES
+ * table above, with channel only affecting whether a subject is
+ * surfaced (email is the only channel with a distinct subject line).
+ * custom_message always short-circuits to the staff-composed
+ * data.customBody, on every channel, since there's no fixed copy to
+ * render. Otherwise, when the resolved channel is whatsapp, rendering
+ * defers to lib/whatsapp/templates.ts's warmer, branded copy instead of
+ * the shared table -- see docs/customer-communications.md.
  */
 export function renderNotificationTemplate(
   eventType: NotificationEventType,
@@ -159,6 +210,26 @@ export function renderNotificationTemplate(
   language: ResponseLanguage,
   data: TemplateData,
 ): RenderedTemplate {
+  if (eventType === "custom_message") {
+    return { subject: null, body: data.customBody ?? "" };
+  }
+
+  const whatsappType = channel === "whatsapp" ? WHATSAPP_TEMPLATE_TYPE_BY_EVENT[eventType] : undefined;
+  if (whatsappType) {
+    const timezone = data.timezone ?? "UTC";
+    const body = renderWhatsAppMessage(whatsappType, language, {
+      patientName: data.patientName,
+      clinicName: data.clinicName,
+      dentistName: data.dentistName,
+      serviceName: data.serviceName,
+      appointmentDate: data.startAt ? formatAppointmentDate(data.startAt, timezone, language) : null,
+      appointmentTime: data.startAt ? formatAppointmentTime(data.startAt, timezone, language) : null,
+      reason: data.reason,
+      reviewUrl: data.reviewUrl,
+    });
+    return { subject: null, body };
+  }
+
   const formattedDate = formatAppointmentDateTime(data.startAt, data.timezone ?? "UTC", language);
   const { subject, body } = TEMPLATES[eventType][language](data, formattedDate);
   return { subject: channel === "email" ? subject : null, body };

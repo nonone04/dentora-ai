@@ -104,6 +104,27 @@ describe("loadNotificationContext", () => {
     });
   });
 
+  it("defaults secondaryReminderHoursBefore to 2h and googleReviewUrl to null when unset", async () => {
+    const supabase = makeFakeSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const context = await loadNotificationContext(supabase as any, { clinicId: "clinic-1", appointmentId: "appt-1" });
+    expect(context).toMatchObject({ secondaryReminderHoursBefore: 2, googleReviewUrl: null });
+  });
+
+  it("honors an explicit secondaryReminderHoursBefore: null opt-out and a configured googleReviewUrl", async () => {
+    const supabase = makeFakeSupabase({
+      clinics: {
+        "clinic-1": {
+          ...CLINIC,
+          settings: { notifications: { secondaryReminderHoursBefore: null, googleReviewUrl: "https://g.page/r/example/review" } },
+        },
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const context = await loadNotificationContext(supabase as any, { clinicId: "clinic-1", appointmentId: "appt-1" });
+    expect(context).toMatchObject({ secondaryReminderHoursBefore: null, googleReviewUrl: "https://g.page/r/example/review" });
+  });
+
   it("returns null when the clinic itself can't be found", async () => {
     const supabase = makeFakeSupabase({ clinics: {} });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

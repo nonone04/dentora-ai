@@ -100,7 +100,6 @@ const DISALLOWED_CLINIC = { id: "clinic-1", is_active: true, settings: { ai: { e
 let fakeSupabase: { from: (table: string) => unknown };
 let appointmentsTable: ReturnType<typeof makeAppointmentsTable>;
 let lifecycleEvents: Row[];
-let notifications: Row[];
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => fakeSupabase,
@@ -108,10 +107,19 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 const { cancelAppointmentTool } = await import("@/lib/ai/tools/cancel-appointment");
 
-function setUp(appointments: Row[], clinic: Row = ALLOWED_CLINIC, seededNotifications: Row[] = []) {
+/**
+ * Deliberately has no "notification_events"/"notification_deliveries"/
+ * "notifications" branch -- transitionAppointment's notification hook
+ * (lib/notifications/engine.ts's createNotificationEvent) catches and
+ * logs any table it can't find rather than throwing, so this fake
+ * doesn't need to model the full Notification & Communication Platform
+ * just to exercise the cancel transition itself. That pipeline's own
+ * skip-pending-deliveries behavior is covered directly in
+ * lib/notifications/engine.test.ts.
+ */
+function setUp(appointments: Row[], clinic: Row = ALLOWED_CLINIC) {
   appointmentsTable = makeAppointmentsTable(appointments);
   lifecycleEvents = [];
-  notifications = seededNotifications.map((n) => ({ ...n }));
 
   fakeSupabase = {
     from: (table: string) => {
@@ -125,22 +133,6 @@ function setUp(appointments: Row[], clinic: Row = ALLOWED_CLINIC, seededNotifica
           return b;
         };
         b.maybeSingle = () => Promise.resolve({ data: null, error: null });
-        b.then = (onFulfilled: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(onFulfilled);
-        return b;
-      }
-      if (table === "notifications") {
-        const b: Record<string, unknown> = {};
-        const filters: Record<string, unknown> = {};
-        b.update = (payload: Record<string, unknown>) => {
-          for (const n of notifications) {
-            if (Object.entries(filters).every(([k, v]) => n[k] === v)) Object.assign(n, payload);
-          }
-          return b;
-        };
-        b.eq = (column: string, value: unknown) => {
-          filters[column] = value;
-          return b;
-        };
         b.then = (onFulfilled: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(onFulfilled);
         return b;
       }
@@ -197,18 +189,6 @@ describe("cancelAppointmentTool", () => {
     await cancelAppointmentTool.execute({ appointmentId: "appt-1", reason: "Feeling better" }, { clinicId: "clinic-1" });
 
     expect(lifecycleEvents[0]).toMatchObject({ reason: "Feeling better" });
-  });
-
-  it("skips pending reminder notifications for the cancelled appointment", async () => {
-    setUp(
-      [{ id: "appt-1", clinic_id: "clinic-1", patient_id: "patient-1", status: "confirmed" }],
-      ALLOWED_CLINIC,
-      [{ id: "notif-1", appointment_id: "appt-1", status: "pending" }],
-    );
-
-    await cancelAppointmentTool.execute({ appointmentId: "appt-1" }, { clinicId: "clinic-1" });
-
-    expect(notifications[0].status).toBe("skipped");
   });
 
   it("throws when neither appointmentId nor patientId is given", async () => {

@@ -144,65 +144,21 @@ function makeEventsTable() {
   return { events, builder };
 }
 
-/** Simple filterable table for `notifications` -- update-with-eq-filters, no CAS needed. */
-function makeSimpleTable(seed: Row[] = []) {
-  const rows: Row[] = [...seed];
-
-  function builder() {
-    let mode: "select" | "update" | null = null;
-    let updatePayload: Record<string, unknown> | null = null;
-    const eqFilters: Record<string, unknown> = {};
-
-    const b = {
-      select() {
-        if (mode === null) mode = "select";
-        return b;
-      },
-      update(payload: Record<string, unknown>) {
-        mode = "update";
-        updatePayload = payload;
-        return b;
-      },
-      eq(column: string, value: unknown) {
-        eqFilters[column] = value;
-        return b;
-      },
-      then(onFulfilled: (v: { data: unknown; error: unknown }) => unknown, onRejected?: (r: unknown) => unknown) {
-        return execute().then(onFulfilled, onRejected);
-      },
-    };
-
-    function execute(): Promise<{ data: unknown; error: unknown }> {
-      const matches = rows.filter((row) => Object.entries(eqFilters).every(([key, value]) => row[key] === value));
-      if (mode === "update" && updatePayload) {
-        for (const row of matches) Object.assign(row, updatePayload);
-      }
-      return Promise.resolve({ data: matches, error: null });
-    }
-
-    return b;
-  }
-
-  return { rows, builder };
-}
-
-function makeFakeSupabase(params: { appointment?: Row; draft?: Row; notifications?: Row[] }) {
+function makeFakeSupabase(params: { appointment?: Row; draft?: Row }) {
   const appointmentsTable = makeCasTable(params.appointment);
   const draftsTable = makeCasTable(params.draft);
   const eventsTable = makeEventsTable();
-  const notificationsTable = makeSimpleTable(params.notifications ?? []);
 
   const client = {
     from(table: string) {
       if (table === "appointments") return appointmentsTable.builder();
       if (table === "appointment_drafts") return draftsTable.builder();
       if (table === "appointment_lifecycle_events") return eventsTable.builder();
-      if (table === "notifications") return notificationsTable.builder();
       throw new Error(`unexpected table in test fake: ${table}`);
     },
   };
 
-  return { client, appointmentsTable, draftsTable, eventsTable, notificationsTable };
+  return { client, appointmentsTable, draftsTable, eventsTable };
 }
 
 beforeEach(() => {
@@ -263,28 +219,11 @@ describe("transitionAppointment: happy path", () => {
     expect(fake.eventsTable.events[0]).toMatchObject({ event: "reschedule", conversation_id: "conv-1" });
   });
 
-  it("skips pending reminder notifications when an appointment is cancelled", async () => {
-    const fake = makeFakeSupabase({
-      appointment: { id: "appt-1", clinic_id: "clinic-1", status: "confirmed" },
-      notifications: [
-        { id: "notif-1", appointment_id: "appt-1", status: "pending" },
-        { id: "notif-2", appointment_id: "appt-1", status: "sent" },
-        { id: "notif-3", appointment_id: "other-appt", status: "pending" },
-      ],
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await transitionAppointment(fake.client as any, {
-      clinicId: "clinic-1",
-      appointmentId: "appt-1",
-      event: "cancel",
-      actor: "ai_assistant",
-    });
-
-    expect(fake.notificationsTable.rows.find((n) => n.id === "notif-1")?.status).toBe("skipped");
-    expect(fake.notificationsTable.rows.find((n) => n.id === "notif-2")?.status).toBe("sent"); // already sent -- untouched
-    expect(fake.notificationsTable.rows.find((n) => n.id === "notif-3")?.status).toBe("pending"); // different appointment -- untouched
-  });
+  // Skipping pending reminders for a cancelled appointment now happens via
+  // applyNotificationHook -> notifyAppointmentCancelled's skipPendingDeliveriesForAppointment,
+  // against notification_deliveries -- covered by lib/notifications/engine.test.ts's
+  // "cancellation skips any still-pending deliveries..." test (with @/lib/notifications
+  // properly exercised, unlike this file's fake client) rather than here.
 
   it("supports the full granular path: check_in -> start -> complete", async () => {
     const fake = makeFakeSupabase({ appointment: { id: "appt-1", clinic_id: "clinic-1", status: "confirmed" } });

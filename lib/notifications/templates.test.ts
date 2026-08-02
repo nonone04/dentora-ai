@@ -37,6 +37,28 @@ describe("renderNotificationTemplate: channel behavior", () => {
       expect(rendered.body.length).toBeGreaterThan(0);
     }
   });
+
+  it("whatsapp gets its own branded copy, distinct from the shared email/sms/in_app body", () => {
+    const whatsapp = renderNotificationTemplate("appointment_confirmed", "whatsapp", "en", DATA);
+    const inApp = renderNotificationTemplate("appointment_confirmed", "in_app", "en", DATA);
+    expect(whatsapp.body).not.toBe(inApp.body);
+    expect(whatsapp.body).toContain("Amina");
+  });
+});
+
+describe("renderNotificationTemplate: custom_message", () => {
+  it("passes the staff-composed body straight through on every channel/language, ignoring the shared table", () => {
+    const data = { ...DATA, customBody: "Please bring your insurance card tomorrow." };
+    for (const channel of ["whatsapp", "email", "sms", "in_app"] as const) {
+      const rendered = renderNotificationTemplate("custom_message", channel, "en", data);
+      expect(rendered.body).toBe(data.customBody);
+      expect(rendered.subject).toBeNull();
+    }
+  });
+
+  it("renders an empty body rather than throwing when no customBody was provided", () => {
+    expect(renderNotificationTemplate("custom_message", "whatsapp", "en", DATA).body).toBe("");
+  });
 });
 
 describe("renderNotificationTemplate: localization", () => {
@@ -46,6 +68,7 @@ describe("renderNotificationTemplate: localization", () => {
     "appointment_cancelled",
     "appointment_rescheduled",
     "appointment_reminder",
+    "appointment_completed",
     "conversation_escalated",
   ] as const;
 

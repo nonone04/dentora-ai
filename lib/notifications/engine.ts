@@ -18,6 +18,18 @@ export type CreateNotificationEventParams = {
   metadata?: Record<string, unknown>;
   /** ISO datetime; defaults to now. A future value (e.g. a reminder) is left pending for the cron dispatcher instead of sent immediately. */
   scheduledFor?: string;
+  /**
+   * Forces delivery on one specific channel for the patient, bypassing
+   * both the patient's own preferred_contact_channel and the automatic-
+   * send preference gates (sendConfirmations, reminderOptIn,
+   * appointmentRemindersEnabled) below -- those model "should we
+   * proactively contact this patient", not "can staff message them on
+   * demand". Used by the Appointment Details dashboard's WhatsApp panel
+   * (app/actions/whatsapp-messages.ts), where staff explicitly chose
+   * both the channel and the moment to send. Never set by any automatic
+   * lifecycle-transition trigger below.
+   */
+  channelOverride?: NotificationDeliveryChannel;
 };
 
 export type CreateNotificationEventOutcome = { event: NotificationEvent; deliveriesCreated: number };
@@ -53,7 +65,7 @@ function isChannelEnabled(channel: NotificationDeliveryChannel, context: Notific
  * every channel that applies (staff: email + in_app; patient: their own
  * single preferred_contact_channel). Pure given a resolved context.
  */
-function buildDeliveryPlans(type: NotificationEventType, context: NotificationContext): DeliveryPlan[] {
+function buildDeliveryPlans(type: NotificationEventType, context: NotificationContext, channelOverride?: NotificationDeliveryChannel): DeliveryPlan[] {
   if (STAFF_EVENT_TYPES.has(type)) {
     if (!context.clinicEmail) return [];
     if (type === "conversation_escalated" && !context.aiSummariesEnabled) return [];
@@ -67,11 +79,13 @@ function buildDeliveryPlans(type: NotificationEventType, context: NotificationCo
   }
 
   if (!context.patient) return [];
-  if (type === "appointment_confirmed" && !context.sendConfirmations) return [];
-  if (type === "appointment_reminder" && (!context.patient.reminderOptIn || !context.appointmentRemindersEnabled)) return [];
+  if (!channelOverride) {
+    if (type === "appointment_confirmed" && !context.sendConfirmations) return [];
+    if (type === "appointment_reminder" && (!context.patient.reminderOptIn || !context.appointmentRemindersEnabled)) return [];
+  }
 
-  const channel = context.patient.preferredContactChannel as NotificationDeliveryChannel;
-  if (!isChannelEnabled(channel, context)) return [];
+  const channel = channelOverride ?? (context.patient.preferredContactChannel as NotificationDeliveryChannel);
+  if (!channelOverride && !isChannelEnabled(channel, context)) return [];
 
   return [
     {
@@ -128,7 +142,7 @@ export async function createNotificationEvent(
     if (!context) return { event, deliveriesCreated: 0 };
 
     const scheduledFor = params.scheduledFor ?? new Date().toISOString();
-    const plans = buildDeliveryPlans(params.type, context);
+    const plans = buildDeliveryPlans(params.type, context, params.channelOverride);
 
     let deliveriesCreated = 0;
     for (const plan of plans) {
@@ -168,6 +182,45 @@ function computeReminderScheduledFor(startAtIso: string, reminderHoursBefore: nu
   return scheduledFor.getTime() > Date.now() ? scheduledFor.toISOString() : null;
 }
 
+/**
+ * Schedules every configured reminder for one appointment -- the
+ * primary reminderHoursBefore (default 24h) plus, unless the clinic
+ * opted out, the secondaryReminderHoursBefore (default 2h) -- each its
+ * own independent appointment_reminder event/delivery with its own
+ * scheduledFor. The single place reminder timing is computed: called
+ * both by notifyAppointmentConfirmed/Rescheduled below (fired off the
+ * Appointment Lifecycle Engine) and directly by app/actions/
+ * appointments.ts's createAppointment and app/actions/appointment-
+ * drafts.ts's approveDraft, which schedule reminders at booking time
+ * rather than waiting for an explicit "confirm" transition.
+ */
+export async function scheduleAppointmentReminders(
+  supabase: SupabaseClient,
+  params: { clinicId: string; appointmentId: string; patientId?: string | null; conversationId?: string | null },
+): Promise<void> {
+  const context = await loadNotificationContext(supabase, { clinicId: params.clinicId, appointmentId: params.appointmentId });
+  const startAt = context?.appointment?.startAt;
+  if (!context || !startAt) return;
+
+  const hoursBeforeList = new Set(
+    [context.reminderHoursBefore, context.secondaryReminderHoursBefore].filter((hours): hours is number => typeof hours === "number"),
+  );
+
+  for (const hoursBefore of hoursBeforeList) {
+    const reminderAt = computeReminderScheduledFor(startAt, hoursBefore);
+    if (!reminderAt) continue;
+
+    await createNotificationEvent(supabase, {
+      clinicId: params.clinicId,
+      type: "appointment_reminder",
+      appointmentId: params.appointmentId,
+      patientId: params.patientId,
+      conversationId: params.conversationId,
+      scheduledFor: reminderAt,
+    });
+  }
+}
+
 /** Staff notification that the AI created a new draft awaiting review -- no equivalent in the old notifications table/schedule.ts, which only ever notified patients. */
 export async function notifyAppointmentBooked(
   supabase: SupabaseClient,
@@ -181,7 +234,7 @@ export async function notifyAppointmentBooked(
   });
 }
 
-/** Patient confirmation, plus (if opted in and the appointment is still ahead) a reminder scheduled for later -- two independent events, since each carries its own template. */
+/** Patient confirmation, plus (if opted in and the appointment is still ahead) the configured reminder(s) scheduled for later -- independent events, since each carries its own template. */
 export async function notifyAppointmentConfirmed(
   supabase: SupabaseClient,
   params: { clinicId: string; appointmentId: string; patientId?: string | null; conversationId?: string | null },
@@ -194,20 +247,20 @@ export async function notifyAppointmentConfirmed(
     conversationId: params.conversationId,
   });
 
-  const context = await loadNotificationContext(supabase, { clinicId: params.clinicId, appointmentId: params.appointmentId });
-  const startAt = context?.appointment?.startAt;
-  if (!context || !startAt) return;
+  await scheduleAppointmentReminders(supabase, params);
+}
 
-  const reminderAt = computeReminderScheduledFor(startAt, context.reminderHoursBefore);
-  if (!reminderAt) return;
-
+/** Post-visit thank-you, plus a Google review request when the clinic has one configured (lib/notifications/settings.ts's googleReviewUrl). Fired from lib/ai/appointments/store.ts's applyNotificationHook on the "complete" lifecycle transition, and manually from the Appointment Details dashboard's "Send Review Request" button. */
+export async function notifyAppointmentCompleted(
+  supabase: SupabaseClient,
+  params: { clinicId: string; appointmentId: string; patientId?: string | null; conversationId?: string | null },
+): Promise<void> {
   await createNotificationEvent(supabase, {
     clinicId: params.clinicId,
-    type: "appointment_reminder",
+    type: "appointment_completed",
     appointmentId: params.appointmentId,
     patientId: params.patientId,
     conversationId: params.conversationId,
-    scheduledFor: reminderAt,
   });
 }
 
@@ -225,7 +278,7 @@ export async function notifyAppointmentCancelled(
   });
 }
 
-/** Rescheduled notice, plus a fresh reminder scheduled against the new time (the stale one for the old time is skipped by createNotificationEvent above). */
+/** Rescheduled notice, plus fresh reminder(s) scheduled against the new time (the stale ones for the old time are skipped by createNotificationEvent above). */
 export async function notifyAppointmentRescheduled(
   supabase: SupabaseClient,
   params: { clinicId: string; appointmentId: string; patientId?: string | null; conversationId?: string | null },
@@ -238,21 +291,7 @@ export async function notifyAppointmentRescheduled(
     conversationId: params.conversationId,
   });
 
-  const context = await loadNotificationContext(supabase, { clinicId: params.clinicId, appointmentId: params.appointmentId });
-  const startAt = context?.appointment?.startAt;
-  if (!context || !startAt) return;
-
-  const reminderAt = computeReminderScheduledFor(startAt, context.reminderHoursBefore);
-  if (!reminderAt) return;
-
-  await createNotificationEvent(supabase, {
-    clinicId: params.clinicId,
-    type: "appointment_reminder",
-    appointmentId: params.appointmentId,
-    patientId: params.patientId,
-    conversationId: params.conversationId,
-    scheduledFor: reminderAt,
-  });
+  await scheduleAppointmentReminders(supabase, params);
 }
 
 export async function notifyEscalation(

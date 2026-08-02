@@ -32,6 +32,7 @@ export type AnalyticsEvent =
       properties: { subject: "patients" | "dentists" | "services"; imported: number; skipped: number };
     })
   | (Base & { name: "WhatsApp Connected"; properties?: Record<string, never> })
+  | (Base & { name: "WhatsApp Test Message Sent"; properties?: Record<string, never> })
   // Patients
   | (Base & { name: "Patient Created"; properties?: Record<string, never> })
   | (Base & { name: "Patient Updated"; properties?: Record<string, never> })

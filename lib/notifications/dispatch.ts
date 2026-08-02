@@ -83,6 +83,8 @@ export async function sendDelivery(supabase: SupabaseClient, delivery: Notificat
     startAt: context.appointment?.startAt ?? null,
     timezone: context.timezone,
     reason: typeof event.metadata?.reason === "string" ? (event.metadata.reason as string) : null,
+    reviewUrl: context.googleReviewUrl,
+    customBody: typeof event.metadata?.customBody === "string" ? (event.metadata.customBody as string) : null,
   };
 
   const rendered = renderNotificationTemplate(event.type, current.channel, current.language, templateData);
@@ -101,7 +103,11 @@ export async function sendDelivery(supabase: SupabaseClient, delivery: Notificat
     clinicId: current.clinicId,
     id: current.id,
     event: "send_succeeded",
-    patch: { sent_at: new Date().toISOString(), last_error: null },
+    patch: {
+      sent_at: new Date().toISOString(),
+      last_error: null,
+      ...(result.providerMessageId ? { provider_message_id: result.providerMessageId } : {}),
+    },
   });
   if (!succeeded.ok) return { ok: false, reason: succeeded.reason };
   return { ok: true, delivery: succeeded.delivery };
@@ -112,9 +118,12 @@ export type ProcessDeliveriesResult = { processed: number; sent: number; retried
 /**
  * Finds due (pending, scheduled_for <= now) deliveries across all
  * clinics and sends each -- the batch entry point for
- * /api/notifications/dispatch, the new pipeline's counterpart to
- * lib/notifications/process.ts's processDueNotifications for the
- * original `notifications` table. Runs cross-tenant by design, so it's
+ * /api/notifications/dispatch. Every booking/status-change path in the
+ * app (app/actions/appointments.ts, appointment-drafts.ts, calendar.ts,
+ * lib/ai/appointments/store.ts) now schedules through this one
+ * notification_events/notification_deliveries pipeline -- the original
+ * `notifications` table + lib/notifications/schedule.ts/process.ts it
+ * used to sit alongside are gone. Runs cross-tenant by design, so it's
  * meant to be called with the admin client. Each delivery's failure is
  * isolated (logged, counted) so one bad row never stops the batch.
  */

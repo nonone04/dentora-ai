@@ -14,6 +14,7 @@ import { FeatureUsageBeacon } from "@/components/telemetry/feature-usage-beacon"
 import { loadPatientProfile, type ReliabilityScore } from "@/lib/ai/patient";
 import { serviceName } from "@/lib/format";
 import { getServerDictionary, getServerLocale, interpolate } from "@/lib/i18n/server";
+import { listPatientNotificationDeliveries } from "@/lib/notifications/queries";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
@@ -93,7 +94,7 @@ export default async function PatientDetailPage({
     { data: treatmentsData },
     { data: dentistsData },
     { data: servicesData },
-    { data: notificationsData },
+    notificationDeliveries,
     { data: conversationsData },
     profile,
     t,
@@ -130,11 +131,7 @@ export default async function PatientDetailPage({
       .eq("clinic_id", clinicId)
       .eq("is_active", true)
       .order("created_at"),
-    supabase
-      .from("notifications")
-      .select("id, type, channel, status, scheduled_for, sent_at")
-      .eq("patient_id", patientId)
-      .order("scheduled_for", { ascending: false }),
+    listPatientNotificationDeliveries(supabase, { clinicId, patientId }),
     supabase
       .from("ai_conversations")
       .select("id, channel, status, started_at, ended_at")
@@ -263,7 +260,7 @@ export default async function PatientDetailPage({
           <ReliabilityCard reliability={profile?.reliability ?? EMPTY_RELIABILITY} clinicAverageScore={clinicAverageScore} t={t} />
           <UpcomingAppointmentsCard clinicId={clinicId} appointments={upcomingAppointments} t={t} locale={locale} />
           <CommunicationHistorySection clinicId={clinicId} conversations={conversationRows} role={membership.role} t={t} locale={locale} />
-          <NotificationsSection notifications={notificationsData ?? []} t={t} locale={locale} />
+          <NotificationsSection notifications={notificationDeliveries ?? []} t={t} locale={locale} />
         </div>
       </div>
     </div>

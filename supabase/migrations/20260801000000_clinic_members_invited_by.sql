@@ -7,12 +7,20 @@
 -- fine for a purely additive, best-effort feature.
 -- ============================================================
 
-alter table clinic_members add column invited_by uuid references profiles(id);
+alter table clinic_members add column if not exists invited_by uuid references profiles(id);
 
 -- Widened to also return invited_by (previously just clinic_id) so the
 -- caller (app/actions/team.ts's acceptInvitation) can look up the
 -- inviter to notify, without a second privileged query.
-create or replace function accept_clinic_invitation(membership_id uuid)
+--
+-- Postgres won't let CREATE OR REPLACE FUNCTION change a function's
+-- return type (ERROR 42P13), and this widens the RETURNS TABLE from
+-- (clinic_id uuid) to (clinic_id uuid, invited_by uuid), so the old
+-- signature must be dropped first. DROP ... IF EXISTS keeps this safe
+-- to re-run against a database that already has either version.
+drop function if exists accept_clinic_invitation(uuid);
+
+create function accept_clinic_invitation(membership_id uuid)
 returns table (clinic_id uuid, invited_by uuid)
 language plpgsql
 security definer

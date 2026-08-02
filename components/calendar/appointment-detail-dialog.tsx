@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { updateAppointmentStatus } from "@/app/actions/appointments";
 import { rescheduleAppointmentAction } from "@/app/actions/calendar";
+import { AppointmentWhatsAppPanel } from "@/components/calendar/appointment-whatsapp-panel";
 import { SuggestedSlots } from "@/components/calendar/suggested-slots";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -161,6 +162,10 @@ export function AppointmentDetailDialog({
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <Separator />
+
+          <AppointmentWhatsAppPanel clinicId={clinicId} appointmentId={appointment.id} t={t} locale={locale} />
         </div>
 
         <DialogFooter className="flex-wrap gap-1.5">

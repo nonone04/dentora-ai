@@ -6,9 +6,11 @@ export {
   createNotificationEvent,
   notifyAppointmentBooked,
   notifyAppointmentCancelled,
+  notifyAppointmentCompleted,
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
   notifyEscalation,
+  scheduleAppointmentReminders,
 } from "@/lib/notifications/engine";
 export type { CreateNotificationEventOutcome, CreateNotificationEventParams } from "@/lib/notifications/engine";
 export { recordNotificationEvent } from "@/lib/notifications/events";

@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { recordLifecycleEvent } from "@/lib/ai/appointments";
 import { logAuditEvent } from "@/lib/audit/log";
-import { scheduleAppointmentReminder } from "@/lib/notifications/schedule";
-import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
+import { scheduleAppointmentReminders } from "@/lib/notifications";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { track } from "@/lib/telemetry";
@@ -113,26 +112,11 @@ export async function approveDraft(
     return { error: updateError.message };
   }
 
-  const [{ data: patient }, { data: clinic }] = await Promise.all([
-    supabase
-      .from("patients")
-      .select("reminder_opt_in, preferred_contact_channel")
-      .eq("id", resolvedPatientId)
-      .single(),
-    supabase.from("clinics").select("settings").eq("id", clinicId).single(),
-  ]);
-
-  const notificationSettings = getClinicNotificationSettings(clinic?.settings ?? null);
-
-  // Same notification path createAppointment already uses -- nothing new.
-  await scheduleAppointmentReminder({
-    appointmentId: appointment.id,
-    patientId: resolvedPatientId,
-    startAt: new Date(draft.proposed_start_at),
-    reminderHoursBefore: notificationSettings.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
-    reminderOptIn: patient?.reminder_opt_in ?? true,
-    channel: patient?.preferred_contact_channel ?? "email",
-  });
+  // Same notification path app/actions/appointments.ts's createAppointment
+  // already uses -- reminderOptIn/channel/hours-before are all resolved
+  // from the patient + clinic settings inside scheduleAppointmentReminders
+  // itself.
+  await scheduleAppointmentReminders(supabase, { clinicId, appointmentId: appointment.id, patientId: resolvedPatientId });
 
   await logAuditEvent(supabase, {
     clinicId,

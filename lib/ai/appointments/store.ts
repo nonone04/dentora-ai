@@ -4,7 +4,7 @@ import { deriveAppointmentStatus, deriveDraftStatus, type CoarseAppointmentStatu
 import { transition } from "@/lib/ai/appointments/machine";
 import type { LifecycleActor, LifecycleEventType, LifecycleStatus } from "@/lib/ai/appointments/types";
 import { mapLifecycleEventToActivityType, recordPatientActivity, refreshPatientProfile } from "@/lib/ai/patient";
-import { notifyAppointmentCancelled, notifyAppointmentConfirmed, notifyAppointmentRescheduled } from "@/lib/notifications";
+import { notifyAppointmentCancelled, notifyAppointmentCompleted, notifyAppointmentConfirmed, notifyAppointmentRescheduled } from "@/lib/notifications";
 
 export type TransitionOutcome =
   | { ok: true; fromStatus: LifecycleStatus; toStatus: LifecycleStatus }
@@ -82,10 +82,10 @@ async function applyPatientIntelligenceHook(
 /**
  * Feeds a successful lifecycle transition into the Notification &
  * Communication Platform (lib/notifications) -- confirm/cancel/
- * reschedule each generate a patient-facing notification event rather
- * than the caller sending a message directly. Only fires for events the
- * new pipeline has a template for; a no-op for anything else (check_in,
- * start, complete, mark_no_show, send_reminder, archive -- none of
+ * reschedule/complete each generate a patient-facing notification event
+ * rather than the caller sending a message directly. Only fires for
+ * events the new pipeline has a template for; a no-op for anything else
+ * (check_in, start, mark_no_show, send_reminder, archive -- none of
  * which are currently patient-facing communications). Always
  * best-effort, exactly like applyPatientIntelligenceHook above: never
  * allowed to affect a transition that has already succeeded.
@@ -119,6 +119,13 @@ async function applyNotificationHook(
       });
     } else if (params.event === "reschedule") {
       await notifyAppointmentRescheduled(supabase, {
+        clinicId: params.clinicId,
+        appointmentId: params.appointmentId,
+        patientId: params.patientId,
+        conversationId: params.conversationId,
+      });
+    } else if (params.event === "complete") {
+      await notifyAppointmentCompleted(supabase, {
         clinicId: params.clinicId,
         appointmentId: params.appointmentId,
         patientId: params.patientId,
@@ -208,15 +215,10 @@ export async function transitionAppointment(
       }
     }
 
-    if (params.event === "cancel") {
-      // Best-effort: don't let an already-fired reminder go out for a cancelled appointment. Never blocks the transition itself.
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .update({ status: "skipped" })
-        .eq("appointment_id", params.appointmentId)
-        .eq("status", "pending");
-      if (notifError) console.error("[ai:appointments] failed to skip pending reminders", notifError.message);
-    }
+    // Skipping any already-scheduled-but-not-yet-sent reminder for a cancelled
+    // appointment happens below, via applyNotificationHook -> notifyAppointmentCancelled
+    // -> createNotificationEvent's skipPendingDeliveriesForAppointment (against
+    // notification_deliveries, the one pipeline every booking path now writes through).
 
     await recordLifecycleEvent(supabase, {
       clinicId: params.clinicId,

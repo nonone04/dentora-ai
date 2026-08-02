@@ -1,26 +1,147 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Copy, MessageCircle } from "lucide-react";
-import { connectWhatsAppAction, disconnectWhatsAppAction } from "@/app/actions/whatsapp-settings";
+import { CheckCircle2, Copy, MessageCircle, XCircle } from "lucide-react";
+import {
+  connectWhatsAppAction,
+  disconnectWhatsAppAction,
+  sendWhatsAppTestMessageAction,
+  testWhatsAppConnectionAction,
+} from "@/app/actions/whatsapp-settings";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "@/lib/i18n";
+import type { WhatsAppPhoneNumberProfile } from "@/lib/whatsapp/types";
 import { cn } from "@/lib/utils";
 
 type Step = "status" | "configure" | "webhook";
+type ApiStatus = "unknown" | "connected" | "failed";
+
+function ConnectionStatusPanel({
+  clinicId,
+  webhookConfigured,
+  profile,
+  displayNumber,
+  phoneNumberId,
+}: {
+  clinicId: string;
+  webhookConfigured: boolean;
+  profile: WhatsAppPhoneNumberProfile | null;
+  displayNumber: string;
+  phoneNumberId: string;
+}) {
+  const t = useTranslations();
+  const wt = t.settings.whatsappWizard.apiStatus;
+
+  const [currentProfile, setCurrentProfile] = useState(profile);
+  const [apiStatus, setApiStatus] = useState<ApiStatus>(profile ? "connected" : "unknown");
+  const [testing, setTesting] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
+
+  async function handleTestConnection() {
+    setTesting(true);
+    setTestError(null);
+    const result = await testWhatsAppConnectionAction(clinicId);
+    setTesting(false);
+    if (!result.ok) {
+      setApiStatus("failed");
+      setTestError(result.message);
+      return;
+    }
+    setApiStatus("connected");
+    setCurrentProfile(result.profile);
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+      <span className="text-xs font-semibold text-muted-foreground">{wt.title}</span>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+        <div>
+          <div className="text-xs text-muted-foreground">{wt.businessNameLabel}</div>
+          <div className="font-medium">{currentProfile?.verifiedName || t.common.dash}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">{wt.phoneLabel}</div>
+          <div className="font-medium" dir="ltr">
+            {currentProfile?.displayPhoneNumber || displayNumber || phoneNumberId || t.common.dash}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">{wt.webhookLabel}</div>
+          <Badge variant={webhookConfigured ? "default" : "outline"} className="mt-0.5">
+            {webhookConfigured ? wt.webhookConfigured : wt.webhookNotConfigured}
+          </Badge>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">{wt.apiLabel}</div>
+          <Badge variant={apiStatus === "connected" ? "default" : apiStatus === "failed" ? "destructive" : "outline"} className="mt-0.5">
+            {apiStatus === "connected" ? wt.apiConnected : apiStatus === "failed" ? wt.apiFailed : wt.apiUnknown}
+          </Badge>
+        </div>
+      </div>
+      {testError && <p className="text-xs text-destructive">{testError}</p>}
+      <Button type="button" size="sm" variant="outline" className="w-fit gap-1.5" disabled={testing} onClick={handleTestConnection}>
+        {apiStatus === "connected" ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : apiStatus === "failed" ? <XCircle className="size-3.5" aria-hidden="true" /> : null}
+        {testing ? wt.testing : wt.testConnection}
+      </Button>
+    </div>
+  );
+}
+
+function TestMessagePanel({ clinicId }: { clinicId: string }) {
+  const t = useTranslations();
+  const wt = t.settings.whatsappWizard.testMessage;
+  const [phone, setPhone] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleSend() {
+    setPending(true);
+    setError(null);
+    setSuccess(false);
+    const result = await sendWhatsAppTestMessageAction(clinicId, phone);
+    setPending(false);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+    setSuccess(true);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-medium">{wt.title}</p>
+      <p className="text-xs text-muted-foreground">{wt.description}</p>
+      <div className="flex flex-wrap gap-2">
+        <Input value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" placeholder={wt.phonePlaceholder} className="w-48" />
+        <Button type="button" size="sm" disabled={pending || !phone.trim()} onClick={handleSend}>
+          {pending ? wt.sending : wt.send}
+        </Button>
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {success && <p className="text-xs text-muted-foreground">{wt.success}</p>}
+    </div>
+  );
+}
 
 export function WhatsAppWizard({
   clinicId,
   initialConnected,
   initialDisplayNumber,
   initialPhoneNumberId,
+  webhookConfigured,
+  initialProfile,
 }: {
   clinicId: string;
   initialConnected: boolean;
   initialDisplayNumber: string | null;
   initialPhoneNumberId: string | null;
+  webhookConfigured: boolean;
+  initialProfile: WhatsAppPhoneNumberProfile | null;
 }) {
   const t = useTranslations();
   const wt = t.settings.whatsappWizard;
@@ -71,6 +192,14 @@ export function WhatsAppWizard({
 
   return (
     <div className="flex flex-col gap-4">
+      <ConnectionStatusPanel
+        clinicId={clinicId}
+        webhookConfigured={webhookConfigured}
+        profile={initialProfile}
+        displayNumber={displayNumber}
+        phoneNumberId={phoneNumberId}
+      />
+
       {step === "status" && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
@@ -154,6 +283,10 @@ export function WhatsAppWizard({
           </Button>
         </div>
       )}
+
+      <Separator />
+
+      <TestMessagePanel clinicId={clinicId} />
 
       <ConfirmDialog
         open={disconnectConfirmOpen}

@@ -1,14 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { transitionAppointment, type LifecycleEventType } from "@/lib/ai/appointments";
 import { logAuditEvent } from "@/lib/audit/log";
 import { getServerDictionary } from "@/lib/i18n/server";
-import {
-  scheduleAppointmentReminder,
-  sendAppointmentConfirmation,
-  skipPendingReminders,
-} from "@/lib/notifications/schedule";
-import { DEFAULT_REMINDER_HOURS_BEFORE, getClinicNotificationSettings } from "@/lib/notifications/settings";
+import { scheduleAppointmentReminders } from "@/lib/notifications";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { track } from "@/lib/telemetry";
@@ -17,6 +13,22 @@ export type CreateAppointmentFormState = { error?: string; success?: boolean } |
 export type UpdateStatusFormState = { error?: string } | undefined;
 
 const VALID_STATUSES = ["scheduled", "confirmed", "completed", "cancelled", "no_show"];
+
+/**
+ * Maps a dashboard status button to the Appointment Lifecycle Engine's
+ * own event vocabulary (lib/ai/appointments) -- the same FSM every AI-
+ * initiated transition already goes through (lib/ai/tools/*), so a
+ * staff-driven status change now gets identical audit-trail, optimistic-
+ * concurrency, and notification-hook coverage. "scheduled" has no
+ * corresponding forward transition (nothing reverts an appointment back
+ * to its initial state), so it's deliberately absent here.
+ */
+const LIFECYCLE_EVENT_BY_STATUS: Partial<Record<string, LifecycleEventType>> = {
+  confirmed: "confirm",
+  cancelled: "cancel",
+  completed: "complete",
+  no_show: "mark_no_show",
+};
 
 export async function createAppointment(
   clinicId: string,
@@ -79,25 +91,10 @@ export async function createAppointment(
     return { error: error.message };
   }
 
-  const [{ data: patient }, { data: clinic }] = await Promise.all([
-    supabase
-      .from("patients")
-      .select("reminder_opt_in, preferred_contact_channel")
-      .eq("id", patientId)
-      .single(),
-    supabase.from("clinics").select("settings").eq("id", clinicId).single(),
-  ]);
-
-  const notificationSettings = getClinicNotificationSettings(clinic?.settings ?? null);
-
-  await scheduleAppointmentReminder({
-    appointmentId: appointment.id,
-    patientId,
-    startAt: start,
-    reminderHoursBefore: notificationSettings.reminderHoursBefore ?? DEFAULT_REMINDER_HOURS_BEFORE,
-    reminderOptIn: patient?.reminder_opt_in ?? true,
-    channel: patient?.preferred_contact_channel ?? "email",
-  });
+  // reminderOptIn / channel / hours-before are all resolved from the patient +
+  // clinic settings inside scheduleAppointmentReminders itself (via
+  // loadNotificationContext) -- no separate fetch needed here anymore.
+  await scheduleAppointmentReminders(supabase, { clinicId, appointmentId: appointment.id, patientId });
 
   await track({ name: "Appointment Created", userId: user.id, clinicId, properties: { source: "staff" } });
 
@@ -105,6 +102,15 @@ export async function createAppointment(
   return { success: true };
 }
 
+/**
+ * Every staff-driven status change now goes through the same
+ * Appointment Lifecycle Engine transition (lib/ai/appointments) that
+ * app/actions/calendar.ts's rescheduleAppointmentAction already uses --
+ * confirmation/cancellation/completion notifications (and reminder
+ * scheduling/skipping) all follow automatically from
+ * applyNotificationHook there, so this action no longer talks to the
+ * Notification & Communication Platform directly.
+ */
 export async function updateAppointmentStatus(
   clinicId: string,
   appointmentId: string,
@@ -112,30 +118,25 @@ export async function updateAppointmentStatus(
   formData: FormData,
 ): Promise<UpdateStatusFormState> {
   const user = await requireUser();
+  const t = await getServerDictionary();
 
   const status = formData.get("status");
   if (typeof status !== "string" || !VALID_STATUSES.includes(status)) {
-    const t = await getServerDictionary();
+    return { error: t.validation.invalidStatus };
+  }
+
+  const event = LIFECYCLE_EVENT_BY_STATUS[status];
+  if (!event) {
     return { error: t.validation.invalidStatus };
   }
 
   const supabase = await createClient();
-  const { data: previous } = await supabase
-    .from("appointments")
-    .select("status")
-    .eq("id", appointmentId)
-    .single();
+  const outcome = await transitionAppointment(supabase, { clinicId, appointmentId, event, actor: "staff", actorId: user.id });
 
-  const { data: appointment, error } = await supabase
-    .from("appointments")
-    .update({ status })
-    .eq("id", appointmentId)
-    .eq("clinic_id", clinicId)
-    .select("id, patient_id, start_at, patients(email, phone, preferred_contact_channel)")
-    .single();
-
-  if (error) {
-    return { error: error.message };
+  if (!outcome.ok) {
+    if (outcome.reason === "not_found") return { error: t.calendar.conflict.notFound };
+    if (outcome.reason === "conflict") return { error: t.calendar.conflict.raceLost };
+    return { error: outcome.message };
   }
 
   await logAuditEvent(supabase, {
@@ -144,38 +145,11 @@ export async function updateAppointmentStatus(
     action: "appointment_status_changed",
     entityType: "appointment",
     entityId: appointmentId,
-    metadata: { from: previous?.status ?? null, to: status },
+    metadata: { from: outcome.fromStatus, to: outcome.toStatus },
   });
   await track({ name: "Appointment Updated", userId: user.id, clinicId, properties: { status } });
   if (status === "cancelled") {
     await track({ name: "Appointment Cancelled", userId: user.id, clinicId });
-  }
-
-  if (status === "cancelled") {
-    await skipPendingReminders(appointmentId);
-  }
-
-  if (status === "confirmed") {
-    const { data: clinic } = await supabase.from("clinics").select("settings").eq("id", clinicId).single();
-    const notificationSettings = getClinicNotificationSettings(clinic?.settings ?? null);
-
-    if (notificationSettings.sendConfirmations ?? true) {
-      const patient = appointment.patients as unknown as {
-        email: string | null;
-        phone: string | null;
-        preferred_contact_channel: "email" | "sms" | "whatsapp";
-      } | null;
-      const channel = patient?.preferred_contact_channel ?? "email";
-      const to = channel === "email" ? (patient?.email ?? null) : (patient?.phone ?? null);
-
-      await sendAppointmentConfirmation({
-        appointmentId,
-        patientId: appointment.patient_id,
-        channel,
-        to,
-        body: `Your appointment on ${new Date(appointment.start_at).toLocaleString()} has been confirmed.`,
-      });
-    }
   }
 
   revalidatePath(`/clinic/${clinicId}/appointments`);

@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { runConversationTurn } from "@/lib/ai/orchestrator";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
@@ -6,6 +5,8 @@ import { getNotificationProvider } from "@/lib/notifications/provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getClinicForPhoneNumberId } from "@/lib/whatsapp/clinic";
 import { findPatientIdByPhone } from "@/lib/whatsapp/patient-match";
+import type { CloudApiPayload } from "@/lib/whatsapp/types";
+import { applyWhatsAppStatusUpdate, isValidSignature } from "@/lib/whatsapp/webhook";
 
 export const dynamic = "force-dynamic";
 
@@ -13,21 +14,6 @@ const SENDER_RATE_LIMIT = 20;
 const SENDER_RATE_WINDOW_MS = 5 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4000;
 const REUSABLE_STATUSES = new Set(["active", "escalated"]);
-
-type CloudApiMessage = {
-  from: string;
-  type: string;
-  text?: { body?: string };
-};
-
-type CloudApiChangeValue = {
-  metadata?: { phone_number_id?: string };
-  messages?: CloudApiMessage[];
-};
-
-type CloudApiPayload = {
-  entry?: { changes?: { field?: string; value?: CloudApiChangeValue }[] }[];
-};
 
 /**
  * Meta's webhook subscription handshake -- called once when the webhook
@@ -47,24 +33,14 @@ export async function GET(request: Request) {
   return new Response("Forbidden", { status: 403 });
 }
 
-function isValidSignature(rawBody: string, signatureHeader: string | null, appSecret: string): boolean {
-  if (!signatureHeader) return false;
-  const [scheme, providedHex] = signatureHeader.split("=");
-  if (scheme !== "sha256" || !providedHex) return false;
-
-  const expected = Buffer.from(crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex"), "hex");
-  const provided = Buffer.from(providedHex, "hex");
-  if (expected.length !== provided.length) return false;
-
-  return crypto.timingSafeEqual(expected, provided);
-}
-
 /**
- * Inbound WhatsApp messages (Phase 15). This route only does
- * channel-specific plumbing -- signature verification, clinic/
- * conversation/patient resolution, sending the reply back out. The one
- * call that does anything AI-related is runConversationTurn, the same
- * function every other channel already uses unmodified.
+ * Inbound WhatsApp webhook deliveries (Phase 15, extended for delivery
+ * status receipts). This route only does channel-specific plumbing --
+ * signature verification, clinic/conversation/patient resolution,
+ * sending the reply back out, applying status updates -- all the actual
+ * logic lives in lib/whatsapp/webhook.ts and lib/ai/orchestrator's
+ * runConversationTurn, the same function every other channel already
+ * uses unmodified.
  */
 export async function POST(request: Request) {
   const appSecret = process.env.WHATSAPP_APP_SECRET;
@@ -94,6 +70,14 @@ export async function POST(request: Request) {
           });
         } catch (err) {
           console.error("[whatsapp] failed to process inbound message", err instanceof Error ? err.message : err);
+        }
+      }
+
+      for (const status of change.value?.statuses ?? []) {
+        try {
+          await applyWhatsAppStatusUpdate(supabase, status);
+        } catch (err) {
+          console.error("[whatsapp] failed to process status update", err instanceof Error ? err.message : err);
         }
       }
     }

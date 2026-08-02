@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   updateNotificationSettings,
   type UpdateNotificationSettingsFormState,
 } from "@/app/actions/clinics";
-import { DEFAULT_REMINDER_HOURS_BEFORE } from "@/lib/notifications/settings";
+import { DEFAULT_REMINDER_HOURS_BEFORE, DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE } from "@/lib/notifications/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslations } from "@/lib/i18n";
@@ -15,7 +15,9 @@ const initialState: UpdateNotificationSettingsFormState = undefined;
 export function NotificationSettingsForm({
   clinicId,
   reminderHoursBefore,
+  secondaryReminderHoursBefore,
   sendConfirmations,
+  googleReviewUrl,
   channelEmail,
   channelInApp,
   categoryAppointmentReminders,
@@ -25,7 +27,9 @@ export function NotificationSettingsForm({
 }: {
   clinicId: string;
   reminderHoursBefore: number;
+  secondaryReminderHoursBefore: number | null;
   sendConfirmations: boolean;
+  googleReviewUrl: string | null;
   channelEmail: boolean;
   channelInApp: boolean;
   categoryAppointmentReminders: boolean;
@@ -38,6 +42,7 @@ export function NotificationSettingsForm({
     initialState,
   );
   const t = useTranslations();
+  const [secondaryReminderEnabled, setSecondaryReminderEnabled] = useState(secondaryReminderHoursBefore !== null);
 
   return (
     <form action={action} className="flex flex-col gap-5">
@@ -54,6 +59,32 @@ export function NotificationSettingsForm({
             required
           />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="secondaryReminderEnabled"
+              checked={secondaryReminderEnabled}
+              onChange={(e) => setSecondaryReminderEnabled(e.target.checked)}
+              className="size-4 rounded border-input"
+            />
+            {t.settings.notifications.secondaryReminderLabel}
+          </label>
+          {secondaryReminderEnabled && (
+            <div className="flex flex-col gap-1 ps-6">
+              <label className="text-xs text-muted-foreground">{t.settings.notifications.secondaryReminderHoursLabel}</label>
+              <Input
+                type="number"
+                name="secondaryReminderHoursBefore"
+                min={0}
+                step={1}
+                defaultValue={secondaryReminderHoursBefore ?? DEFAULT_SECONDARY_REMINDER_HOURS_BEFORE}
+                className="w-32"
+                required
+              />
+            </div>
+          )}
+        </div>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
@@ -63,6 +94,11 @@ export function NotificationSettingsForm({
           />
           {t.settings.notifications.sendConfirmations}
         </label>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{t.settings.notifications.googleReviewUrlLabel}</label>
+          <Input type="url" name="googleReviewUrl" defaultValue={googleReviewUrl ?? ""} dir="ltr" placeholder="https://g.page/r/..." />
+          <p className="text-xs text-muted-foreground">{t.settings.notifications.googleReviewUrlHelp}</p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

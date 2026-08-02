@@ -6,6 +6,8 @@ export const NOTIFICATION_EVENT_TYPES = [
   "appointment_cancelled",
   "appointment_rescheduled",
   "appointment_reminder",
+  "appointment_completed",
+  "custom_message",
   "conversation_escalated",
 ] as const;
 
@@ -64,6 +66,8 @@ export type NotificationDelivery = {
   sentAt: string | null;
   deliveredAt: string | null;
   readAt: string | null;
+  /** The sending provider's own message id (e.g. Meta's `wamid...`), populated on send_succeeded when the provider returns one. Lets an inbound webhook status callback (lib/whatsapp/webhook.ts) find its way back to this row. Null for channels/providers that don't report one (email, in_app, the logging fallback). */
+  providerMessageId: string | null;
   /** Visibility axis for the in-app Notification Center -- orthogonal to `status`, set via store.ts's archiveDelivery(), never through the delivery-status FSM. */
   archivedAt: string | null;
   version: number;
@@ -90,6 +94,7 @@ export type NotificationDeliveryRow = {
   sent_at: string | null;
   delivered_at: string | null;
   read_at: string | null;
+  provider_message_id: string | null;
   archived_at: string | null;
   version: number;
   created_at: string;
@@ -116,6 +121,7 @@ export function parseNotificationDeliveryRow(row: NotificationDeliveryRow): Noti
     sentAt: row.sent_at,
     deliveredAt: row.delivered_at,
     readAt: row.read_at,
+    providerMessageId: row.provider_message_id,
     archivedAt: row.archived_at,
     version: row.version,
     createdAt: row.created_at,

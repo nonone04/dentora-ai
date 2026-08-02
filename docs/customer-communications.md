@@ -403,6 +403,166 @@ toggles just change the iframe's width; the theme toggle uses the
   calls `transitionAppointment` twice with an identical "confirm" event and
   asserts the notification mock fires exactly once.
 
+## WhatsApp Cloud API integration
+
+Full WhatsApp messaging (reminders, confirmations, cancellations, reschedules,
+a post-visit thank-you + Google review request, a staff-facing send panel,
+and a clinic-wide message log), built on top of the Notification &
+Communication Platform above rather than as a parallel system.
+
+### Architecture
+
+```
+lib/whatsapp/               -- the WhatsApp-specific service layer
+  types.ts                     shared types (Graph API payloads, WhatsAppSendResult)
+  client.ts                    the ONE place that calls Meta's Graph API --
+                                sendTextMessage / sendTemplateMessage / getPhoneNumberProfile,
+                                with in-process retry+backoff on transient errors
+  templates.ts                 branded, localized (en/fr/ar) message copy --
+                                warmer/more conversational than the shared
+                                lib/notifications/templates.ts table
+  send.ts                      standalone, DB-free "compose and send one message"
+                                functions (sendAppointmentReminder, sendAppointmentConfirmation,
+                                sendCancellationMessage, sendRescheduleMessage,
+                                sendCompletedThankYou, sendCustomMessage) -- used by the
+                                Settings page's Test Message button and directly callable
+                                for programmatic use
+  webhook.ts                    signature verification + inbound status-callback handling
+  clinic.ts, patient-match.ts   inbound routing helpers (Phase 15, unchanged)
+
+lib/notifications/providers/whatsapp-cloud-provider.ts
+  -- the NotificationProvider adapter, delegates to lib/whatsapp/client.ts
+     (one Graph API integration, not two)
+```
+
+Two send paths, one Graph API client:
+
+- **Automated, preference-driven** (confirm/cancel/reschedule/reminder/
+  completed, triggered by appointment lifecycle transitions) flow through
+  `lib/notifications/engine.ts` -> `dispatch.ts`, same as every other
+  channel -- picks the patient's preferred channel, retries, logs. When the
+  resolved channel is `whatsapp`, `lib/notifications/templates.ts`'s
+  `renderNotificationTemplate` defers to `lib/whatsapp/templates.ts`'s
+  branded copy instead of the shared terse table (email/sms/in_app are
+  unaffected).
+- **Manual dashboard actions** (Send Reminder/Confirmation/Custom Message/
+  Review Request buttons on Appointment Details) always target whatsapp
+  regardless of the patient's stored preference --
+  `app/actions/whatsapp-messages.ts` calls
+  `lib/notifications/engine.ts`'s `createNotificationEvent` with a new
+  `channelOverride` param, which bypasses the automatic-send preference
+  gates (those model "should we proactively contact this patient", not
+  "can staff message them on demand") but still goes through the same
+  notification_events/notification_deliveries pipeline for tracking.
+
+### New event types
+
+`appointment_completed` (thank-you + Google review request, fired from
+`lib/ai/appointments/store.ts`'s `applyNotificationHook` on the `complete`
+lifecycle transition) and `custom_message` (free-form staff-composed text,
+routed through the pipeline via `metadata.customBody` rather than a fixed
+template) were added to the `notification_event_type` Postgres enum
+(`supabase/migrations/20260801220000_whatsapp_notification_event_types.sql`).
+
+### Real delivered/read/failed status
+
+`notification_deliveries` gained a `provider_message_id` column
+(`supabase/migrations/20260801230000_notification_deliveries_provider_message_id.sql`),
+populated from Meta's `messages[0].id` on send. The inbound webhook route
+(`app/api/whatsapp/webhook/route.ts`) now handles Meta's `statuses[]`
+payload (delivery/read/failure receipts) alongside the pre-existing
+`messages[]` handling, matching each receipt back to its delivery row via
+that id and applying the delivery-status FSM's `mark_delivered`/
+`mark_read`/`mark_failed` events (`lib/notifications/machine.ts` -- the
+first two already existed but were unreachable for lack of this id).
+
+### Dual reminders (24h + 2h)
+
+`ClinicNotificationSettings.secondaryReminderHoursBefore` (default 2h,
+`null` to disable) sits alongside the existing `reminderHoursBefore`
+(default 24h). `lib/notifications/engine.ts`'s `scheduleAppointmentReminders`
+is the one place that schedules every configured reminder for an
+appointment -- called from `notifyAppointmentConfirmed`/`Rescheduled` and
+directly from `app/actions/appointments.ts`'s `createAppointment` /
+`appointment-drafts.ts`'s `approveDraft`. Configurable in Settings >
+Notifications.
+
+### Pipeline consolidation
+
+Before this work, two notification code paths coexisted: a legacy
+`notifications` table + `lib/notifications/schedule.ts`/`process.ts` (used
+only by staff-manual appointment actions) and the modern
+`notification_events`/`notification_deliveries` pipeline (used by the
+AI-driven lifecycle engine). `app/actions/appointments.ts`'s
+`updateAppointmentStatus` now calls `transitionAppointment`
+(`lib/ai/appointments`) for confirm/cancel/complete/mark_no_show, exactly
+like `app/actions/calendar.ts`'s reschedule action already did -- every
+status change gets the same audited FSM, Patient Intelligence hook, and
+notification pipeline. `lib/notifications/schedule.ts`, `process.ts`, and
+`/api/notifications/process` were removed; the legacy `notifications` table
+itself was left in the database (unused, no destructive migration) rather
+than dropped. The patient detail page's Notifications card now reads from
+`notification_deliveries` (`lib/notifications/queries.ts`'s
+`listPatientNotificationDeliveries`).
+
+### Dashboard: Appointment Details WhatsApp panel
+
+`components/calendar/appointment-whatsapp-panel.tsx`, embedded in the
+Appointment Details dialog: Send Reminder / Send Confirmation / Send Custom
+Message / Send Review Request buttons, plus the most recent WhatsApp
+delivery's type/status/timestamp for that appointment
+(`lib/notifications/queries.ts`'s `getLatestWhatsAppDeliveryForAppointment`).
+Server actions in `app/actions/whatsapp-messages.ts`.
+
+### Communication History
+
+`/clinic/[clinicId]/communications` -- clinic-wide, every channel, newest
+first (Time/Patient/Type/Channel/Status/Response columns).
+`lib/notifications/queries.ts`'s `listCommunicationHistory`; "Response"
+shows a delivered/read timestamp or the provider's failure reason, not the
+patient's typed reply (that content lives in `ai_conversations`, a separate
+feature not joined against here).
+
+### Settings page
+
+`components/settings/whatsapp-wizard.tsx` now shows, in addition to the
+existing connect/reconfigure/disconnect flow: the connected number's
+verified business name (from a live Graph API call,
+`lib/whatsapp/client.ts`'s `getPhoneNumberProfile`), a Webhook status
+badge (a config-presence heuristic -- `WHATSAPP_VERIFY_TOKEN`/
+`WHATSAPP_APP_SECRET` both set; Meta doesn't expose a cheap true
+subscription check), an API status badge with a **Test Connection** button,
+and a **Send Test Message** button (`lib/whatsapp/send.ts`'s
+`sendCustomMessage`, no notification_event/delivery bookkeeping since
+there's no patient/appointment behind a test ping). The Notifications
+settings card also gained a Google review link field
+(`ClinicNotificationSettings.googleReviewUrl`), included in the
+`appointment_completed` message when set.
+
+### Known limitation: Meta's 24-hour messaging window
+
+Meta only allows **free-form text** messages within 24 hours of the
+patient's last inbound message. Outside that window, a proactive/
+business-initiated message (a reminder sent days ahead, for instance) must
+use a **pre-approved Meta message template** (`type: "template"`) or Meta
+rejects the send. `lib/whatsapp/client.ts` implements `sendTemplateMessage`
+and is ready for this, but **creating and getting templates approved in
+Meta Business Manager is a manual step outside this repo** -- the same
+category as the Supabase Auth Hook setup already documented above. Every
+send in this integration currently uses free text, matching the behavior
+that existed before this work; reminders/confirmations sent to patients who
+haven't messaged the clinic recently may fail for this reason until
+approved templates are wired in. This is a real product limitation, not a
+bug, and is the main piece of "production ready" this integration doesn't
+fully close on its own.
+
+### Environment variables
+
+`WHATSAPP_BUSINESS_ACCOUNT_ID` (WABA id, used by the Settings page's health
+check and reserved for future template management) and
+`NEXT_PUBLIC_WHATSAPP_NUMBER` (display-only connected number) were added
+alongside the four existing WhatsApp env vars -- see `.env.example`.
+
 ## Future work
 
 - Per-user staff notification targeting (today, in-app deliveries and their
@@ -432,9 +592,16 @@ toggles just change the iframe's width; the theme toggle uses the
   currently always falls back to the safe logging provider — no real SMS
   provider (Twilio or similar) is wired up. The same `NotificationProvider`
   interface used for email/WhatsApp today would apply unchanged.
-- Future WhatsApp support: partially real already —
-  `lib/notifications/providers/whatsapp-cloud-provider.ts` sends real
-  WhatsApp Cloud API messages when `WHATSAPP_ACCESS_TOKEN` /
-  `WHATSAPP_PHONE_NUMBER_ID` are configured, but WhatsApp messages are
-  plain text only; a branded WhatsApp template system (approved Meta
-  message templates) would be new work.
+- WhatsApp: now fully wired (see "WhatsApp Cloud API integration" above) --
+  branded copy, dashboard send panel, delivery status tracking, Communication
+  History, and Settings page health checks. The one remaining gap is Meta
+  **approved message templates** for proactive sends outside the 24-hour
+  customer-service window (`lib/whatsapp/client.ts`'s `sendTemplateMessage`
+  is implemented and ready; creating/approving the templates themselves in
+  Meta Business Manager is a manual step outside this repo).
+- Per-clinic WhatsApp sending: outbound WhatsApp sends currently use one
+  global `WHATSAPP_ACCESS_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` pair for every
+  clinic (fine for a single connected number today), while inbound routing
+  already supports a per-clinic `whatsapp_phone_number_id`. Sending from
+  each clinic's own connected WABA number would need the provider factory
+  to resolve credentials per-clinic instead of from process env.
