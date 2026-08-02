@@ -47,6 +47,7 @@ export type AnalyticsEvent =
   | (Base & { name: "AI Suggestion Dismissed"; properties?: Record<string, never> })
   // Business
   | (Base & { name: "Checkout Started"; properties: { plan: "standard" | "professional" } })
+  | (Base & { name: "Clinic Data Reset"; properties?: Record<string, never> })
   // Business (no trigger wired yet -- see docs/product-analytics.md)
   | (Base & { name: "Trial Started"; properties?: Record<string, never> })
   | (Base & { name: "Trial Ended"; properties?: Record<string, never> })

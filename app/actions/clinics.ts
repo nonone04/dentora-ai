@@ -4,12 +4,15 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AI_ACTIONS, type AIActionName } from "@/lib/ai/actions";
+import { logAuditEvent } from "@/lib/audit/log";
+import { resetClinicData } from "@/lib/clinic/reset-data";
+import { parseWorkingHoursFromForm } from "@/lib/clinic/working-hours";
 import { sendTemplatedEmail } from "@/lib/email/send";
 import type { WelcomeProps } from "@/lib/email/templates/welcome";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getServerLocale } from "@/lib/i18n/get-locale";
 import { requireUser } from "@/lib/supabase/auth";
-import { requireManager } from "@/lib/supabase/clinic";
+import { requireManager, requireOwner } from "@/lib/supabase/clinic";
 import { createClient } from "@/lib/supabase/server";
 import { identify, track } from "@/lib/telemetry";
 import { DEFAULT_CURRENCY, isCurrencyCode } from "@/lib/currency";
@@ -243,6 +246,133 @@ export async function updateRegionalSettings(
 
   revalidatePath(`/clinic/${clinicId}/settings`);
   revalidatePath(`/clinic/${clinicId}/settings/regional`);
+  return { success: true };
+}
+
+export type UpdateClinicInfoFormState = { error?: string; success?: boolean } | undefined;
+
+/**
+ * Updates the clinic's core identity/contact profile. Owner-only (stricter
+ * than the other Settings sections, which allow admins too) -- renaming a
+ * clinic or swapping its public contact details is more consequential than
+ * tweaking notification hours, per the Danger-Zone-adjacent "only the owner
+ * touches clinic identity" posture.
+ */
+export async function updateClinicInfo(
+  clinicId: string,
+  _prevState: UpdateClinicInfoFormState,
+  formData: FormData,
+): Promise<UpdateClinicInfoFormState> {
+  const user = await requireOwner(clinicId);
+  const t = await getServerDictionary();
+  if (!user) {
+    return { error: t.validation.ownerOnlyClinicInfo };
+  }
+
+  const name = stringField(formData, "name");
+  if (!name) {
+    return { error: t.validation.clinicNameRequired };
+  }
+
+  const supabase = await createClient();
+
+  const logo = formData.get("logo");
+  const hasLogo = logo instanceof File && logo.size > 0;
+  let logoUrl: string | undefined;
+  if (hasLogo) {
+    const file = logo as File;
+    if (file.size > LOGO_MAX_BYTES) {
+      return { error: t.validation.clinicLogoTooLarge };
+    }
+    if (!(file.type in LOGO_MIME_EXTENSIONS)) {
+      return { error: t.validation.clinicLogoInvalidType };
+    }
+    const extension = LOGO_MIME_EXTENSIONS[file.type];
+    const path = `${user.id}/logo-${Date.now()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("clinic-logos")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (!uploadError) {
+      logoUrl = supabase.storage.from("clinic-logos").getPublicUrl(path).data.publicUrl;
+    }
+  }
+
+  const { data: clinic } = await supabase.from("clinics").select("settings").eq("id", clinicId).single();
+  const settings = (clinic?.settings ?? {}) as Record<string, unknown>;
+  const workingHours = parseWorkingHoursFromForm(formData);
+
+  const update: Record<string, unknown> = {
+    name,
+    phone: stringField(formData, "phone") || null,
+    email: stringField(formData, "email") || null,
+    website: stringField(formData, "website") || null,
+    address: stringField(formData, "address") || null,
+    city: stringField(formData, "city") || null,
+    country: stringField(formData, "country") || null,
+    timezone: stringField(formData, "timezone") || undefined,
+    settings: { ...settings, workingHours },
+  };
+  if (formData.get("removeLogo") === "on") {
+    update.logo_url = null;
+  } else if (logoUrl) {
+    update.logo_url = logoUrl;
+  }
+
+  const { error } = await supabase.from("clinics").update(update).eq("id", clinicId);
+  if (error) {
+    return { error: error.message };
+  }
+
+  await logAuditEvent(supabase, { clinicId, actorId: user.id, action: "clinic_info_updated", entityType: "clinic", entityId: clinicId });
+
+  // "layout" so the clinic name in the sidebar/header (read once in
+  // app/clinic/[clinicId]/layout.tsx) picks up the change too, not just
+  // the settings page itself.
+  revalidatePath(`/clinic/${clinicId}`, "layout");
+  return { success: true };
+}
+
+export type ResetClinicDataFormState = { error?: string; success?: boolean } | undefined;
+
+/**
+ * Irreversibly wipes the clinic's transactional data (appointments,
+ * patients, AI conversations, notifications) while keeping the
+ * subscription, owner/staff accounts, clinic settings and billing intact.
+ * Owner-only, and requires typing the clinic's exact name as a
+ * confirmation step -- see components/clinic/danger-zone.tsx.
+ */
+export async function resetClinicDataAction(
+  clinicId: string,
+  _prevState: ResetClinicDataFormState,
+  formData: FormData,
+): Promise<ResetClinicDataFormState> {
+  const user = await requireOwner(clinicId);
+  const t = await getServerDictionary();
+  if (!user) {
+    return { error: t.validation.ownerOnlyDangerZone };
+  }
+
+  const supabase = await createClient();
+  const { data: clinic } = await supabase.from("clinics").select("name, is_demo").eq("id", clinicId).single();
+  if (!clinic || clinic.is_demo) {
+    return { error: t.settings.dangerZone.resetError };
+  }
+
+  const confirmName = stringField(formData, "confirmName");
+  if (confirmName !== clinic.name) {
+    return { error: t.settings.dangerZone.confirmNameMismatch };
+  }
+
+  try {
+    await resetClinicData(clinicId);
+  } catch {
+    return { error: t.settings.dangerZone.resetError };
+  }
+
+  await logAuditEvent(supabase, { clinicId, actorId: user.id, action: "clinic_data_reset", entityType: "clinic", entityId: clinicId });
+  await track({ name: "Clinic Data Reset", userId: user.id, clinicId });
+
+  revalidatePath(`/clinic/${clinicId}`, "layout");
   return { success: true };
 }
 

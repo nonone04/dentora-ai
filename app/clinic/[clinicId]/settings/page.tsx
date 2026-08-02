@@ -1,8 +1,9 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Globe2, UsersRound } from "lucide-react";
+import { ArrowRight, Building2, Globe2, UsersRound } from "lucide-react";
 import { AISettingsForm } from "@/components/ai/ai-settings-form";
+import { DangerZone } from "@/components/clinic/danger-zone";
 import { NotificationSettingsForm } from "@/components/clinic/notification-settings-form";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -46,7 +47,11 @@ export default async function SettingsPage({
 
   const supabase = await createClient();
   const [{ data: clinic }, { data: conversationsData }, t, locale] = await Promise.all([
-    supabase.from("clinics").select("settings, slug, whatsapp_number, whatsapp_phone_number_id").eq("id", clinicId).single(),
+    supabase
+      .from("clinics")
+      .select("name, is_demo, settings, slug, whatsapp_number, whatsapp_phone_number_id")
+      .eq("id", clinicId)
+      .single(),
     supabase
       .from("ai_conversations")
       .select("id, channel, status, started_at, ended_at, patients(full_name)")
@@ -89,6 +94,31 @@ export default async function SettingsPage({
         <h1 className="text-lg font-semibold">{t.settings.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.settings.description}</p>
       </div>
+
+      {membership.role === "owner" && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Building2 className="size-4.5" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">{t.settings.clinicInfo.title}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{t.settings.clinicInfo.description}</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              nativeButton={false}
+              render={<Link href={`/clinic/${clinicId}/settings/clinic-info`} />}
+            >
+              {t.settings.clinicInfo.manageLink}
+              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -246,6 +276,8 @@ export default async function SettingsPage({
           )}
         </div>
       </div>
+
+      {membership.role === "owner" && <DangerZone clinicId={clinicId} clinicName={clinic?.name ?? ""} isDemo={clinic?.is_demo ?? false} />}
     </div>
   );
 }

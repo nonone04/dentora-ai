@@ -47,3 +47,19 @@ export async function requireManager(clinicId: string) {
   }
   return user;
 }
+
+/**
+ * Returns the authenticated user if they're the owner of clinicId, null
+ * otherwise. Stricter than requireManager -- used for actions the owner
+ * alone should be able to take (renaming/editing the clinic's core
+ * identity, wiping clinic data) even though admins otherwise manage most
+ * other Settings sections.
+ */
+export async function requireOwner(clinicId: string) {
+  const user = await requireUser();
+  const membership = await requireClinicMembership(clinicId, user.id);
+  if (membership.role !== "owner") {
+    return null;
+  }
+  return user;
+}

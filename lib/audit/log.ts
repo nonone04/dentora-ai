@@ -19,7 +19,9 @@ export type AuditAction =
   | "dentists_imported"
   | "services_imported"
   | "whatsapp_connected"
-  | "whatsapp_disconnected";
+  | "whatsapp_disconnected"
+  | "clinic_info_updated"
+  | "clinic_data_reset";
 
 export type AuditEvent = {
   clinicId: string;

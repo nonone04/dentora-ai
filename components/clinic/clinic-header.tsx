@@ -97,10 +97,12 @@ export function ClinicHeader({
               <ShieldIcon aria-hidden="true" />
               {t.header.accountSecurity}
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/account/billing" />}>
-              <CreditCard aria-hidden="true" />
-              {t.header.accountBilling}
-            </DropdownMenuItem>
+            {role === "owner" && (
+              <DropdownMenuItem render={<Link href="/account/billing" />}>
+                <CreditCard aria-hidden="true" />
+                {t.header.accountBilling}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <form action={signOut} className="contents">
               <DropdownMenuItem render={<button type="submit" className="w-full" />}>{t.header.signOut}</DropdownMenuItem>
