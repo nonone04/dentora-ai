@@ -57,7 +57,7 @@ export function MarketingFooter() {
               <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.login}
               </Link>
-              <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 {t.marketing.nav.getStarted}
               </Link>
             </nav>

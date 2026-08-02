@@ -6,6 +6,7 @@ import { MarketingHomeContent } from "@/components/marketing/home-content";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { hasActiveSubscription } from "@/lib/supabase/subscription";
 import { getPlanPricing } from "@/lib/marketing/pricing-plans";
 
 type PendingInvitation = {
@@ -40,8 +41,20 @@ export default async function Home() {
     redirect(`/clinic/${membership.clinic_id}`);
   }
 
-  const { data: pendingData } = await supabase.rpc("get_pending_invitations");
+  const [{ data: pendingData }, subscriptionActive] = await Promise.all([
+    supabase.rpc("get_pending_invitations"),
+    hasActiveSubscription(supabase, user.id),
+  ]);
   const pendingInvitations = (pendingData ?? []) as PendingInvitation[];
+
+  // Invited staff never pay for themselves -- if there's a pending
+  // invitation, let them see/accept it regardless of their own
+  // subscription status. Only bounce to /pricing when there's truly
+  // nothing else to do here. (create_clinic_with_owner also enforces this
+  // server-side, so this is UX, not the authoritative gate.)
+  if (pendingInvitations.length === 0 && !subscriptionActive) {
+    redirect("/pricing");
+  }
 
   return (
     <CreateClinicScreen

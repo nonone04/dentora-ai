@@ -71,7 +71,15 @@ export async function createPlanCheckoutSession(
       customer_email: user.email,
       client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/billing/success`,
+      // Carries user_id onto every subsequent customer.subscription.* webhook
+      // event -- those never carry this session's client_reference_id (see
+      // lib/stripe/subscriptions.ts#activateSubscriptionFromStripeSubscription).
+      subscription_data: { metadata: { user_id: user.id } },
+      // {CHECKOUT_SESSION_ID} is Stripe's own template token, substituted at
+      // redirect time -- lets /billing/success synchronously reconcile via
+      // stripe.checkout.sessions.retrieve instead of only relying on the
+      // (racy, async) webhook.
+      success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/pricing`,
     });
   } catch (error) {

@@ -24,7 +24,7 @@ export function FinalCtaSection() {
         <Reveal delay={160}>
           <div className="mt-8 flex flex-col justify-center gap-3.5 md:mt-9 md:flex-row">
             <Link
-              href="/login"
+              href="/pricing"
               className="inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-xl md:min-h-0 md:w-auto"
             >
               {t.marketing.home.ctaPrimary}

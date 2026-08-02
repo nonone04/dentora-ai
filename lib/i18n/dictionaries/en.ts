@@ -46,6 +46,7 @@ export const en = {
     signOut: "Sign out",
     toggleMenu: "Toggle navigation menu",
     accountSecurity: "Account security",
+    accountBilling: "Billing",
   },
   notificationBell: {
     title: "Notifications",
@@ -1369,7 +1370,7 @@ export const en = {
       headlineHighlight: "modern dental clinics",
       subheadline:
         "Dentora AI handles bookings, reminders, and patient messages around the clock, so your team can focus on care instead of the phone.",
-      ctaPrimary: "Start free",
+      ctaPrimary: "Get Started",
       ctaSecondary: "Try the interactive demo",
       trustChips: {
         encryption: "Encrypted in transit & at rest",
@@ -1377,7 +1378,7 @@ export const en = {
         auditLogs: "Full audit logs",
         gdpr: "GDPR ready",
       },
-      noCreditCard: "No credit card required",
+      noCreditCard: "14-day money-back guarantee",
       heroScreenshotAlt: "Dentora AI clinic dashboard showing today's appointments, patients, and clinic activity",
       floatingCardAppointments: "6 appointments today",
       floatingCardAppointmentsSub: "Automatically confirmed",
@@ -1858,6 +1859,37 @@ export const en = {
       verifyEmail: "Verify your email address",
       strongPassword: "Use a strong, unique password",
       reviewSessions: "Review your active sessions regularly",
+    },
+  },
+  accountBilling: {
+    title: "Billing",
+    description: "Manage your subscription, payment method, and invoices.",
+    currentPlan: "Current plan",
+    status: "Status",
+    nextBilling: "Next billing",
+    cancelsOn: "Cancels on {date}",
+    statuses: {
+      active: "Active",
+      trialing: "Trial",
+      pastDue: "Past due",
+      canceled: "Cancelled",
+      unpaid: "Unpaid",
+      incomplete: "Incomplete",
+      incompleteExpired: "Expired",
+      paused: "Paused",
+    },
+    actions: {
+      manageSubscription: "Manage subscription",
+      updateCard: "Update card",
+      downloadInvoice: "Download invoice",
+      cancelSubscription: "Cancel subscription",
+    },
+    actionError: "Something went wrong. Please try again.",
+    invoiceUnavailable: "No invoice is available yet.",
+    emptyState: {
+      title: "No active subscription",
+      description: "Subscribe to a plan to manage billing here.",
+      cta: "View plans",
     },
   },
   adminAnalytics: {

@@ -3,6 +3,7 @@ import { ClinicShell } from "@/components/clinic/clinic-shell";
 import { countUnreadNotifications, listNotificationCenterItems } from "@/lib/notifications/queries";
 import { requireUser } from "@/lib/supabase/auth";
 import { requireClinicMembership } from "@/lib/supabase/clinic";
+import { clinicHasActiveSubscription } from "@/lib/supabase/subscription";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ClinicLayout({
@@ -24,6 +25,16 @@ export default async function ClinicLayout({
   const membership = await requireClinicMembership(clinicId, user.id);
 
   const supabase = await createClient();
+
+  // Every clinic route lives under this layout, so this is the single
+  // choke point for "no active subscription -> no dashboard access"
+  // (invited staff inherit the clinic owner's status, see the
+  // clinic_has_active_subscription SQL function). Checked before the
+  // data-fetching below so a lapsed subscription short-circuits early.
+  if (!(await clinicHasActiveSubscription(supabase, clinicId))) {
+    redirect("/pricing");
+  }
+
   const [{ data: profile }, { data: clinic }, notifications, unreadNotificationCount] = await Promise.all([
     supabase.from("profiles").select("full_name, onboarding_tour_completed_at").eq("id", user.id).maybeSingle(),
     supabase.from("clinics").select("is_demo").eq("id", clinicId).maybeSingle(),

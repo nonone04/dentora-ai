@@ -1,29 +1,55 @@
-import Link from "next/link";
-import { BadgeCheck } from "lucide-react";
-import { AuthShell } from "@/components/auth/auth-shell";
-import { Button } from "@/components/ui/button";
-import { getServerDictionary } from "@/lib/i18n/server";
+import { redirect } from "next/navigation";
+import type Stripe from "stripe";
+import { getStripeClient } from "@/lib/stripe/server";
+import { activateSubscriptionFromStripeSubscription } from "@/lib/stripe/subscriptions";
 import { requireUser } from "@/lib/supabase/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function BillingSuccessPage() {
-  await requireUser();
-  const t = await getServerDictionary();
+/**
+ * Post-payment orchestration point: Stripe's success_url
+ * (lib/stripe/checkout.ts) lands here with ?session_id={CHECKOUT_SESSION_ID}.
+ * Synchronously reconciles the subscription (rather than only waiting on
+ * the webhook, which can race this redirect) using the same idempotent
+ * upsert the webhook itself uses, then sends the user on to their clinic
+ * if they already have one, or to "/" -- which now gates clinic creation
+ * on the subscription this page just activated (see app/page.tsx).
+ */
+export default async function BillingSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>;
+}) {
+  const user = await requireUser();
+  const { session_id: sessionId } = await searchParams;
 
-  return (
-    <AuthShell t={t}>
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#2563EB_0%,#4F46E5_100%)] text-white shadow-lg shadow-blue-600/20">
-          <BadgeCheck className="size-6" aria-hidden="true" />
-        </span>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{t.billing.success.title}</h2>
-        <p className="text-sm text-muted-foreground">{t.billing.success.description}</p>
-      </div>
+  if (sessionId) {
+    try {
+      const stripe = getStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
+      // Guards against a user pasting/replaying someone else's session_id.
+      if (session.client_reference_id === user.id && session.subscription && typeof session.subscription !== "string") {
+        await activateSubscriptionFromStripeSubscription(createAdminClient(), session.subscription as Stripe.Subscription, user.id);
+      }
+    } catch (err) {
+      console.error("[billing/success] failed to reconcile checkout session", err instanceof Error ? err.message : err);
+      // Fall through -- the webhook remains the durable backstop even if
+      // this synchronous read fails.
+    }
+  }
 
-      <div className="mt-7">
-        <Button className="h-10 w-full" nativeButton={false} render={<Link href="/" />}>
-          {t.billing.success.cta}
-        </Button>
-      </div>
-    </AuthShell>
-  );
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("clinic_members")
+    .select("clinic_id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (membership) {
+    redirect(`/clinic/${membership.clinic_id}`);
+  }
+
+  redirect("/");
 }

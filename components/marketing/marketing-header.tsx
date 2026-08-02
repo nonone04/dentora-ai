@@ -122,7 +122,7 @@ export function MarketingHeader() {
               {t.marketing.nav.login}
             </Link>
             <Link
-              href="/login"
+              href="/pricing"
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700",
                 ctaGlowClass,
@@ -227,7 +227,7 @@ export function MarketingHeader() {
               {t.marketing.nav.login}
             </Link>
             <Link
-              href="/login"
+              href="/pricing"
               onClick={() => setMenuOpen(false)}
               className={cn(
                 "flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white",

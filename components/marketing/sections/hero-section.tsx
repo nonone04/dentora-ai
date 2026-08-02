@@ -47,7 +47,7 @@ export function HeroSection() {
             <Reveal delay={700}>
               <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row md:mt-9 md:w-auto">
                 <Link
-                  href="/login"
+                  href="/pricing"
                   className={cn(
                     "inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full bg-blue-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 md:min-h-0 md:w-auto",
                     ctaGlowClass,

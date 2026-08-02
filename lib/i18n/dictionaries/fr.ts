@@ -42,6 +42,7 @@ export const fr = {
     signOut: "Se déconnecter",
     toggleMenu: "Afficher/masquer le menu",
     accountSecurity: "Sécurité du compte",
+    accountBilling: "Facturation",
   },
   notificationBell: {
     title: "Notifications",
@@ -1379,7 +1380,7 @@ export const fr = {
       headlineHighlight: "cliniques dentaires modernes",
       subheadline:
         "Dentora AI gère les réservations, les rappels et les messages des patients en continu, pour que votre équipe se concentre sur les soins plutôt que sur le téléphone.",
-      ctaPrimary: "Commencer gratuitement",
+      ctaPrimary: "Commencer",
       ctaSecondary: "Essayer la démo interactive",
       trustChips: {
         encryption: "Chiffrées en transit et au repos",
@@ -1387,7 +1388,7 @@ export const fr = {
         auditLogs: "Journaux d'audit complets",
         gdpr: "Conforme RGPD",
       },
-      noCreditCard: "Aucune carte bancaire requise",
+      noCreditCard: "Garantie satisfait ou remboursé 14 jours",
       heroScreenshotAlt: "Tableau de bord de la clinique Dentora AI montrant les rendez-vous du jour, les patients et l'activité de la clinique",
       floatingCardAppointments: "6 rendez-vous aujourd'hui",
       floatingCardAppointmentsSub: "Confirmés automatiquement",
@@ -1859,6 +1860,37 @@ export const fr = {
       verifyEmail: "Vérifiez votre adresse e-mail",
       strongPassword: "Utilisez un mot de passe fort et unique",
       reviewSessions: "Vérifiez régulièrement vos sessions actives",
+    },
+  },
+  accountBilling: {
+    title: "Facturation",
+    description: "Gérez votre abonnement, votre moyen de paiement et vos factures.",
+    currentPlan: "Forfait actuel",
+    status: "Statut",
+    nextBilling: "Prochaine facturation",
+    cancelsOn: "Se termine le {date}",
+    statuses: {
+      active: "Actif",
+      trialing: "Essai",
+      pastDue: "Paiement en retard",
+      canceled: "Annulé",
+      unpaid: "Impayé",
+      incomplete: "Incomplet",
+      incompleteExpired: "Expiré",
+      paused: "En pause",
+    },
+    actions: {
+      manageSubscription: "Gérer l'abonnement",
+      updateCard: "Mettre à jour la carte",
+      downloadInvoice: "Télécharger la facture",
+      cancelSubscription: "Annuler l'abonnement",
+    },
+    actionError: "Une erreur s'est produite. Veuillez réessayer.",
+    invoiceUnavailable: "Aucune facture n'est disponible pour le moment.",
+    emptyState: {
+      title: "Aucun abonnement actif",
+      description: "Abonnez-vous à un forfait pour gérer la facturation ici.",
+      cta: "Voir les forfaits",
     },
   },
   onboardingTour: {

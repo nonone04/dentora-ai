@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Menu, ShieldIcon } from "lucide-react";
+import { ChevronDown, CreditCard, Menu, ShieldIcon } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -96,6 +96,10 @@ export function ClinicHeader({
             <DropdownMenuItem render={<Link href="/account/security" />}>
               <ShieldIcon aria-hidden="true" />
               {t.header.accountSecurity}
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/account/billing" />}>
+              <CreditCard aria-hidden="true" />
+              {t.header.accountBilling}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <form action={signOut} className="contents">

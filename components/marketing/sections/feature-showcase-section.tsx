@@ -113,7 +113,7 @@ export function FeatureShowcase({
         </ul>
         <div className="mt-8 flex flex-wrap items-center gap-5">
           <Link
-            href="/login"
+            href="/pricing"
             className={cn(
               "inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700",
               ctaGlowClass,
@@ -197,7 +197,7 @@ export function MobileFeatureStack({ items }: { items: MobileShowcaseItem[] }) {
               </ul>
 
               <Link
-                href="/login"
+                href="/pricing"
                 className={cn(
                   "mt-6 flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-5 text-[15px] font-semibold text-white",
                   ctaGlowClass,
