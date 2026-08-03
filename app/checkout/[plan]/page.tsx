@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerCurrency } from "@/lib/currency/server";
 import { getUser } from "@/lib/supabase/auth";
-import { createPlanCheckoutSession, isCheckoutPlan } from "@/lib/stripe/checkout";
+import { createPlanCheckoutSession, isBillingInterval, isCheckoutPlan } from "@/lib/stripe/checkout";
 import { track } from "@/lib/telemetry";
 
 /**
@@ -13,20 +13,29 @@ import { track } from "@/lib/telemetry";
  * hit this URL directly, and re-runs the same session creation the button
  * would have used if the user had already been logged in.
  */
-export default async function CheckoutPlanPage({ params }: { params: Promise<{ plan: string }> }) {
+export default async function CheckoutPlanPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ plan: string }>;
+  searchParams: Promise<{ interval?: string }>;
+}) {
   const { plan } = await params;
+  const { interval } = await searchParams;
 
   if (!isCheckoutPlan(plan)) {
     notFound();
   }
 
+  const billingInterval = isBillingInterval(interval) ? interval : "monthly";
+
   const user = await getUser();
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/checkout/${plan}`)}`);
+    redirect(`/login?next=${encodeURIComponent(`/checkout/${plan}?interval=${billingInterval}`)}`);
   }
 
   const currency = await getServerCurrency();
-  const result = await createPlanCheckoutSession(user, plan, currency);
+  const result = await createPlanCheckoutSession(user, plan, currency, billingInterval);
   if ("error" in result) {
     redirect("/pricing");
   }

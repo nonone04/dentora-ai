@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { getUser, requireUser } from "@/lib/supabase/auth";
-import { createPlanCheckoutSession, resolveCheckoutCurrency, type CheckoutPlan } from "@/lib/stripe/checkout";
+import { createPlanCheckoutSession, isBillingInterval, resolveCheckoutCurrency, type CheckoutPlan } from "@/lib/stripe/checkout";
 import { createPortalSession } from "@/lib/stripe/portal";
 import { getStripeClient } from "@/lib/stripe/server";
 import { createClient } from "@/lib/supabase/server";
@@ -27,16 +27,19 @@ export type CheckoutFormState = { error?: string } | undefined;
 export async function createCheckoutSession(
   plan: CheckoutPlan,
   currency: string,
+  billingInterval: string,
   _prevState: CheckoutFormState,
   _formData: FormData,
 ): Promise<CheckoutFormState> {
+  const interval = isBillingInterval(billingInterval) ? billingInterval : "monthly";
+
   const user = await getUser();
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/checkout/${plan}`)}`);
+    redirect(`/login?next=${encodeURIComponent(`/checkout/${plan}?interval=${interval}`)}`);
   }
 
   const t = await getServerDictionary();
-  const result = await createPlanCheckoutSession(user, plan, resolveCheckoutCurrency(currency));
+  const result = await createPlanCheckoutSession(user, plan, resolveCheckoutCurrency(currency), interval);
 
   if ("error" in result) {
     return { error: t.billing.checkoutError };

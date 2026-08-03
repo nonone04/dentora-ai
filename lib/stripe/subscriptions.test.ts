@@ -21,9 +21,10 @@ describe("resolvePlanFromPriceId", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    vi.stubEnv("STRIPE_STANDARD_PRICE_ID", "price_standard_mad");
-    vi.stubEnv("STRIPE_STANDARD_PRICE_ID_USD", "price_standard_usd");
-    vi.stubEnv("STRIPE_PROFESSIONAL_PRICE_ID", "price_professional_mad");
+    vi.stubEnv("STRIPE_STANDARD_PRICE_ID_EUR", "price_standard_monthly");
+    vi.stubEnv("STRIPE_STANDARD_PRICE_ID_EUR_YEARLY", "price_standard_yearly");
+    vi.stubEnv("STRIPE_PROFESSIONAL_PRICE_ID_EUR", "price_professional_monthly");
+    vi.stubEnv("STRIPE_PROFESSIONAL_PRICE_ID_EUR_YEARLY", "price_professional_yearly");
   });
 
   afterEach(() => {
@@ -33,13 +34,14 @@ describe("resolvePlanFromPriceId", () => {
     }
   });
 
-  it("resolves the legacy no-suffix env var", () => {
-    expect(resolvePlanFromPriceId("price_standard_mad")).toBe("standard");
-    expect(resolvePlanFromPriceId("price_professional_mad")).toBe("professional");
+  it("resolves the monthly EUR price id", () => {
+    expect(resolvePlanFromPriceId("price_standard_monthly")).toBe("standard");
+    expect(resolvePlanFromPriceId("price_professional_monthly")).toBe("professional");
   });
 
-  it("resolves a currency-suffixed env var", () => {
-    expect(resolvePlanFromPriceId("price_standard_usd")).toBe("standard");
+  it("resolves the yearly EUR price id", () => {
+    expect(resolvePlanFromPriceId("price_standard_yearly")).toBe("standard");
+    expect(resolvePlanFromPriceId("price_professional_yearly")).toBe("professional");
   });
 
   it("returns null for an unknown price id", () => {

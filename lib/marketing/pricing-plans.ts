@@ -4,14 +4,14 @@
  * (lib/i18n/dictionaries/*.ts, `marketing.pricing.plans`), keyed by the
  * same order/index as PLAN_KEYS. The numbers themselves are never stored
  * here: `getPlanPricing()` resolves starter/professional straight from the
- * live Stripe Price objects (lib/stripe/pricing.ts, which reads
- * STRIPE_STANDARD_PRICE_ID / STRIPE_PROFESSIONAL_PRICE_ID -- the same env
- * vars Checkout charges against, see lib/stripe/checkout.ts) so the
+ * live Stripe Price objects (lib/stripe/pricing.ts, which reads the same
+ * env vars Checkout charges against, see lib/stripe/checkout.ts) so the
  * marketing site can never drift out of sync with what Stripe actually
- * bills. Enterprise has no Stripe price by design (sales-assisted, not
- * self-serve).
+ * bills -- including the yearly total, which is a real Stripe Price, not a
+ * computed discount. Enterprise has no Stripe price by design
+ * (sales-assisted, not self-serve).
  */
-import { getLivePlanPrices } from "@/lib/stripe/pricing";
+import { getLivePlanPrices, type LivePlanPrice } from "@/lib/stripe/pricing";
 import type { CurrencyCode } from "@/lib/currency";
 
 export const PLAN_KEYS = ["starter", "professional", "enterprise"] as const;
@@ -19,22 +19,12 @@ export type PlanKey = (typeof PLAN_KEYS)[number];
 
 export type PlanPricing = { monthlyPrice: number; yearlyBilledTotal: number; currency: CurrencyCode } | { custom: true };
 
-/**
- * Discount applied to the live monthly Stripe price for the yearly billing
- * toggle. Stripe only has a single monthly Price configured per plan, so
- * there's no separate annual Price to read a real yearly total from --
- * this percentage is the one number here that isn't itself read from
- * Stripe, it only scales the live monthly amount.
- */
-export const ANNUAL_DISCOUNT_PERCENT = 20;
-
 export function isCustomPricing(pricing: PlanPricing): pricing is { custom: true } {
   return "custom" in pricing;
 }
 
-function toPlanPricing({ amount, currency }: { amount: number; currency: CurrencyCode }): PlanPricing {
-  const yearlyBilledTotal = Math.round(amount * 12 * (1 - ANNUAL_DISCOUNT_PERCENT / 100) * 100) / 100;
-  return { monthlyPrice: amount, yearlyBilledTotal, currency };
+function toPlanPricing({ monthlyAmount, yearlyAmount, currency }: LivePlanPrice): PlanPricing {
+  return { monthlyPrice: monthlyAmount, yearlyBilledTotal: yearlyAmount, currency };
 }
 
 /** Live plan pricing keyed the same as PLAN_KEYS. */

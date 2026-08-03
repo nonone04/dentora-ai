@@ -1635,7 +1635,7 @@ export const en = {
       subtitle: "Choose the plan that fits your clinic. Upgrade, downgrade, or cancel anytime.",
       popular: "Most popular",
       disclaimer:
-        "Prices shown are converted estimates, excluding tax, and charged in USD at checkout. Yearly billing is charged as a single upfront annual payment. Contact us for multi-clinic or custom Enterprise pricing.",
+        "Prices shown are converted estimates, excluding tax, and charged in EUR at checkout. Yearly billing is charged as a single upfront annual payment and is only available in EUR. Contact us for multi-clinic or custom Enterprise pricing.",
       customPrice: "Custom",
       billingToggle: {
         monthly: "Monthly",

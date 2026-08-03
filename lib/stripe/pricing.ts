@@ -1,24 +1,18 @@
 import { unstable_cache } from "next/cache";
 import { getStripeClient } from "@/lib/stripe/server";
 import { CURRENCIES, isCurrencyCode, type CurrencyCode } from "@/lib/currency";
-import type { CheckoutPlan } from "@/lib/stripe/checkout";
+import { PLAN_PRICE_ENV_VARS, type CheckoutPlan } from "@/lib/stripe/plan";
 
 export type LivePlanPrice = {
-  amount: number;
+  monthlyAmount: number;
+  yearlyAmount: number;
   currency: CurrencyCode;
-  interval: string | null;
 };
 
-const PRICE_ID_ENV_VAR: Record<CheckoutPlan, string> = {
-  standard: "STRIPE_STANDARD_PRICE_ID",
-  professional: "STRIPE_PROFESSIONAL_PRICE_ID",
-};
-
-async function fetchLivePlanPrice(plan: CheckoutPlan): Promise<LivePlanPrice> {
-  const envVar = PRICE_ID_ENV_VAR[plan];
+async function fetchLivePrice(envVar: string): Promise<{ amount: number; currency: CurrencyCode }> {
   const priceId = process.env[envVar];
   if (!priceId) {
-    throw new Error(`${envVar} is not set -- cannot resolve the live "${plan}" plan price`);
+    throw new Error(`${envVar} is not set -- cannot resolve its live Stripe price`);
   }
 
   const price = await getStripeClient().prices.retrieve(priceId);
@@ -30,20 +24,24 @@ async function fetchLivePlanPrice(plan: CheckoutPlan): Promise<LivePlanPrice> {
     throw new Error(`Stripe price ${priceId} (${envVar}) has no unit_amount -- metered/tiered prices aren't supported here`);
   }
 
-  return {
-    amount: price.unit_amount / 10 ** CURRENCIES[currency].decimalDigits,
-    currency,
-    interval: price.recurring?.interval ?? null,
-  };
+  return { amount: price.unit_amount / 10 ** CURRENCIES[currency].decimalDigits, currency };
+}
+
+async function fetchLivePlanPrice(plan: CheckoutPlan): Promise<LivePlanPrice> {
+  const envVars = PLAN_PRICE_ENV_VARS[plan];
+  const [monthly, yearly] = await Promise.all([fetchLivePrice(envVars.monthly), fetchLivePrice(envVars.yearly)]);
+  return { monthlyAmount: monthly.amount, yearlyAmount: yearly.amount, currency: monthly.currency };
 }
 
 /**
  * Live Stripe price lookup for the two self-serve plans -- the single
  * source of truth for what the marketing site displays and what Checkout
  * charges (see lib/stripe/checkout.ts, which resolves the same env vars).
- * Cached for 5 minutes so marketing page renders don't hit the Stripe API
- * on every request; on-demand invalidation can call
- * `revalidateTag("stripe-pricing")` after a price change.
+ * `yearlyAmount` is the real upfront annual total Stripe has configured,
+ * not a computed discount, so the pricing page can never drift from what
+ * Checkout actually bills. Cached for 5 minutes so marketing page renders
+ * don't hit the Stripe API on every request; on-demand invalidation can
+ * call `revalidateTag("stripe-pricing")` after a price change.
  */
 export const getLivePlanPrices = unstable_cache(
   async (): Promise<Record<CheckoutPlan, LivePlanPrice>> => {

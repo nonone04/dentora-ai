@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { createCheckoutSession, type CheckoutFormState } from "@/app/actions/billing";
 import type { CurrencyCode } from "@/lib/currency";
-import type { CheckoutPlan } from "@/lib/stripe/checkout";
+import type { BillingInterval, CheckoutPlan } from "@/lib/stripe/checkout";
 import { cn } from "@/lib/utils";
 
 const initialState: CheckoutFormState = undefined;
@@ -11,15 +11,20 @@ const initialState: CheckoutFormState = undefined;
 export function PlanCheckoutButton({
   plan,
   currency,
+  billingInterval,
   className,
   children,
 }: {
   plan: CheckoutPlan;
   currency: CurrencyCode;
+  billingInterval: BillingInterval;
   className?: string;
   children: React.ReactNode;
 }) {
-  const [state, action, pending] = useActionState(createCheckoutSession.bind(null, plan, currency), initialState);
+  const [state, action, pending] = useActionState(
+    createCheckoutSession.bind(null, plan, currency, billingInterval),
+    initialState,
+  );
 
   return (
     <form action={action}>

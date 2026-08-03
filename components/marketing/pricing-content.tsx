@@ -51,9 +51,7 @@ import { useLocale, useTranslations } from "@/lib/i18n";
 import { convert, formatCurrency, useCurrency } from "@/lib/currency";
 import { PLAN_KEYS, isCustomPricing, type PlanKey, type PlanPricing } from "@/lib/marketing/pricing-plans";
 import { cn } from "@/lib/utils";
-import type { CheckoutPlan } from "@/lib/stripe/checkout";
-
-type BillingPeriod = "monthly" | "yearly";
+import type { BillingInterval, CheckoutPlan } from "@/lib/stripe/checkout";
 
 // Plans render in a fixed order (Starter, Professional, Enterprise) from the
 // i18n dictionary; only the first two map to a real Stripe price -- Enterprise
@@ -106,9 +104,16 @@ export function PricingContent({ planPricing }: { planPricing: Record<PlanKey, P
   const plans = t.marketing.pricing.plans;
   const rows = t.marketing.pricing.comparisonTable.rows;
   const faqItems = t.marketing.pricing.faq.items;
-  const [billing, setBilling] = useState<BillingPeriod>("monthly");
+  const [billingChoice, setBillingChoice] = useState<BillingInterval>("monthly");
   const shouldReduceMotion = useReducedMotion();
   const localeTag = INTL_LOCALE[locale];
+
+  // Yearly billing only has a real Stripe price in EUR (lib/stripe/checkout.ts) --
+  // derive the effective selection from the visitor's currency so switching
+  // away from EUR (or loading in a non-EUR currency to begin with) always
+  // falls back to monthly, without needing to resync `billing` state itself.
+  const yearlyAvailable = currency === "EUR";
+  const billing: BillingInterval = yearlyAvailable ? billingChoice : "monthly";
 
   return (
     <div className="flex flex-col">
@@ -134,17 +139,23 @@ export function PricingContent({ planPricing }: { planPricing: Record<PlanKey, P
             >
               {(["monthly", "yearly"] as const).map((period) => {
                 const isActive = billing === period;
+                const isDisabled = period === "yearly" && !yearlyAvailable;
                 const label =
                   period === "monthly" ? t.marketing.pricing.billingToggle.monthly : t.marketing.pricing.billingToggle.yearly;
                 return (
                   <button
                     key={period}
                     type="button"
-                    onClick={() => setBilling(period)}
+                    onClick={() => setBillingChoice(period)}
+                    disabled={isDisabled}
                     aria-pressed={isActive}
                     className={cn(
                       "relative inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                      isActive ? "text-slate-900 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+                      isDisabled
+                        ? "cursor-not-allowed text-slate-300 dark:text-slate-600"
+                        : isActive
+                          ? "text-slate-900 dark:text-white"
+                          : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
                     )}
                   >
                     {isActive &&
@@ -323,7 +334,12 @@ export function PricingContent({ planPricing }: { planPricing: Record<PlanKey, P
                       const checkoutPlan = CHECKOUT_PLANS[index];
 
                       return checkoutPlan ? (
-                        <PlanCheckoutButton plan={checkoutPlan} currency={currency} className={cn(ctaClassName, "w-full")}>
+                        <PlanCheckoutButton
+                          plan={checkoutPlan}
+                          currency={currency}
+                          billingInterval={billing}
+                          className={cn(ctaClassName, "w-full")}
+                        >
                           {plan.cta}
                         </PlanCheckoutButton>
                       ) : (

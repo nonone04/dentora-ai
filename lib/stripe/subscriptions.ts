@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CheckoutPlan } from "@/lib/stripe/checkout";
+import { PLAN_PRICE_ENV_VARS, type CheckoutPlan } from "@/lib/stripe/plan";
 
 export const ACTIVE_SUBSCRIPTION_STATUSES = ["trialing", "active"] as const;
 
@@ -8,19 +8,16 @@ export function isActiveSubscriptionStatus(status: string): boolean {
   return (ACTIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(status);
 }
 
-const PLAN_PRICE_ENV_VAR_RE = /^STRIPE_(STANDARD|PROFESSIONAL)_PRICE_ID(?:_[A-Z]+)?$/;
-
 /**
- * Reverses lib/stripe/checkout.ts's plan -> price env var mapping (across
- * every currency variant and the legacy no-suffix vars) so a Stripe
- * Subscription's price id can be resolved back to a CheckoutPlan.
+ * Reverses lib/stripe/checkout.ts's plan -> price env var mapping (both the
+ * monthly and yearly EUR price ids) so a Stripe Subscription's price id can
+ * be resolved back to a CheckoutPlan regardless of which billing interval
+ * the customer picked at checkout.
  */
 export function resolvePlanFromPriceId(priceId: string | null | undefined): CheckoutPlan | null {
   if (!priceId) return null;
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== priceId) continue;
-    const match = PLAN_PRICE_ENV_VAR_RE.exec(key);
-    if (match) return match[1].toLowerCase() as CheckoutPlan;
+  for (const [plan, intervals] of Object.entries(PLAN_PRICE_ENV_VARS) as [CheckoutPlan, Record<string, string>][]) {
+    if (Object.values(intervals).some((envVar) => process.env[envVar] === priceId)) return plan;
   }
   return null;
 }

@@ -2,37 +2,21 @@ import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/server";
 import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/currency";
+import { PLAN_PRICE_ENV_VARS, type BillingInterval, type CheckoutPlan } from "@/lib/stripe/plan";
 
-export type CheckoutPlan = "standard" | "professional";
+export { isBillingInterval, isCheckoutPlan, type BillingInterval, type CheckoutPlan } from "@/lib/stripe/plan";
 
-/**
- * Per-currency Stripe Price id env vars, e.g. STRIPE_STANDARD_PRICE_ID_MAD,
- * STRIPE_STANDARD_PRICE_ID_USD. Only the DEFAULT_CURRENCY (MAD) vars are
- * actually configured today -- every other currency resolves through the
- * DEFAULT_CURRENCY fallback in resolvePriceId() below, so pricing displays
- * in the visitor's chosen currency while Stripe keeps charging the single
- * real price it has. Dropping in e.g. STRIPE_STANDARD_PRICE_ID_USD later
- * needs no code change, just the env var.
- */
-function planPriceEnvVar(plan: CheckoutPlan, currency: CurrencyCode): string | undefined {
-  const value = process.env[`STRIPE_${plan.toUpperCase()}_PRICE_ID_${currency}`];
-  if (value) return value;
-  // Backward-compat: the pre-multi-currency env vars had no currency
-  // suffix and always priced in MAD -- keep honoring them for MAD so
-  // existing deployments don't need to rename anything.
-  return currency === DEFAULT_CURRENCY ? process.env[`STRIPE_${plan.toUpperCase()}_PRICE_ID`] : undefined;
-}
-
-function resolvePriceId(plan: CheckoutPlan, currency: CurrencyCode): string | undefined {
-  return planPriceEnvVar(plan, currency) ?? planPriceEnvVar(plan, DEFAULT_CURRENCY);
-}
-
-export function isCheckoutPlan(value: string): value is CheckoutPlan {
-  return value === "standard" || value === "professional";
+function resolvePriceId(plan: CheckoutPlan, interval: BillingInterval): string | undefined {
+  return process.env[PLAN_PRICE_ENV_VARS[plan][interval]];
 }
 
 export function resolveCheckoutCurrency(value: string | undefined | null): CurrencyCode {
   return isCurrencyCode(value) ? value : DEFAULT_CURRENCY;
+}
+
+/** Yearly billing is only offered in EUR -- every other currency silently checks out monthly instead. */
+export function resolveBillingInterval(currency: CurrencyCode, requested: BillingInterval): BillingInterval {
+  return requested === "yearly" && currency === "EUR" ? "yearly" : "monthly";
 }
 
 async function getOrigin() {
@@ -54,10 +38,12 @@ export async function createPlanCheckoutSession(
   user: { id: string; email?: string },
   plan: CheckoutPlan,
   currency: CurrencyCode = DEFAULT_CURRENCY,
+  requestedInterval: BillingInterval = "monthly",
 ): Promise<{ url: string } | { error: true }> {
-  const priceId = resolvePriceId(plan, currency);
+  const interval = resolveBillingInterval(currency, requestedInterval);
+  const priceId = resolvePriceId(plan, interval);
   if (!priceId) {
-    console.error(`[billing] missing Stripe price id env var for plan "${plan}"`);
+    console.error(`[billing] missing Stripe price id env var (${PLAN_PRICE_ENV_VARS[plan][interval]}) for plan "${plan}"`);
     return { error: true };
   }
 
@@ -74,7 +60,7 @@ export async function createPlanCheckoutSession(
       // Carries user_id onto every subsequent customer.subscription.* webhook
       // event -- those never carry this session's client_reference_id (see
       // lib/stripe/subscriptions.ts#activateSubscriptionFromStripeSubscription).
-      subscription_data: { metadata: { user_id: user.id } },
+      subscription_data: { metadata: { user_id: user.id, billing_interval: interval } },
       // {CHECKOUT_SESSION_ID} is Stripe's own template token, substituted at
       // redirect time -- lets /billing/success synchronously reconcile via
       // stripe.checkout.sessions.retrieve instead of only relying on the
