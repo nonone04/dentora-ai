@@ -42,10 +42,25 @@ async function fetchLivePlanPrice(plan: CheckoutPlan): Promise<LivePlanPrice> {
  * Checkout actually bills. Cached for 5 minutes so marketing page renders
  * don't hit the Stripe API on every request; on-demand invalidation can
  * call `revalidateTag("stripe-pricing")` after a price change.
+ *
+ * A plan resolves to `null` (instead of throwing) when its env vars are
+ * missing/misconfigured or Stripe can't be reached -- a bad Stripe price
+ * config must not take down the whole marketing site. Callers (see
+ * lib/marketing/pricing-plans.ts) treat `null` the same as Enterprise's
+ * `{ custom: true }` pricing.
  */
 export const getLivePlanPrices = unstable_cache(
-  async (): Promise<Record<CheckoutPlan, LivePlanPrice>> => {
-    const [standard, professional] = await Promise.all([fetchLivePlanPrice("standard"), fetchLivePlanPrice("professional")]);
+  async (): Promise<Record<CheckoutPlan, LivePlanPrice | null>> => {
+    const [standard, professional] = await Promise.all([
+      fetchLivePlanPrice("standard").catch((error) => {
+        console.error("[pricing] failed to resolve live price for plan \"standard\":", error);
+        return null;
+      }),
+      fetchLivePlanPrice("professional").catch((error) => {
+        console.error("[pricing] failed to resolve live price for plan \"professional\":", error);
+        return null;
+      }),
+    ]);
     return { standard, professional };
   },
   ["stripe-live-plan-prices"],

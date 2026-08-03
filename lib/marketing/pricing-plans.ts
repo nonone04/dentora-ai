@@ -23,8 +23,9 @@ export function isCustomPricing(pricing: PlanPricing): pricing is { custom: true
   return "custom" in pricing;
 }
 
-function toPlanPricing({ monthlyAmount, yearlyAmount, currency }: LivePlanPrice): PlanPricing {
-  return { monthlyPrice: monthlyAmount, yearlyBilledTotal: yearlyAmount, currency };
+function toPlanPricing(live: LivePlanPrice | null): PlanPricing {
+  if (!live) return { custom: true };
+  return { monthlyPrice: live.monthlyAmount, yearlyBilledTotal: live.yearlyAmount, currency: live.currency };
 }
 
 /** Live plan pricing keyed the same as PLAN_KEYS. */
