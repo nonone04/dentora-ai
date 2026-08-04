@@ -57,6 +57,13 @@ export async function createPlanCheckoutSession(
       customer_email: user.email,
       client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
+      // Adaptive Pricing's cross-border-subscription mode caps payment methods
+      // to card/Link/Apple Pay/Google Pay, silently excluding SEPA Debit even
+      // though it's enabled in the account's Payment Method Configuration.
+      // Managed Payments enforces adaptive_pricing=true unless explicitly
+      // disabled alongside it, so both must be turned off together here.
+      managed_payments: { enabled: false },
+      adaptive_pricing: { enabled: false },
       // Carries user_id onto every subsequent customer.subscription.* webhook
       // event -- those never carry this session's client_reference_id (see
       // lib/stripe/subscriptions.ts#activateSubscriptionFromStripeSubscription).
