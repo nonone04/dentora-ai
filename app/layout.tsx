@@ -29,6 +29,7 @@ const notoSansArabic = Noto_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://dentora.vip"),
   title: "Dentora AI",
   description: "AI-powered front desk for dental clinics.",
 };

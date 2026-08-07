@@ -1420,7 +1420,9 @@ export const en = {
     },
     footer: {
       tagline: "The calm, trustworthy front desk for modern dental clinics -- powered by AI, built for care.",
-      product: "Product",
+      company: "Company",
+      resources: "Resources",
+      legal: "Legal",
       account: "Account",
       copyright: "© {year} Dentora AI. All rights reserved.",
       madeFor: "Built for dental clinics worldwide.",
@@ -1428,6 +1430,17 @@ export const en = {
         isolation: "Tenant-isolated data",
         rbac: "Role-based access control",
         encryption: "Encrypted in transit & at rest",
+      },
+      links: {
+        about: "About",
+        helpCenter: "Help Center",
+        documentation: "Documentation",
+        api: "API",
+        privacyPolicy: "Privacy Policy",
+        termsOfService: "Terms of Service",
+        refundPolicy: "Refund Policy",
+        cookiePolicy: "Cookie Policy",
+        kycVerification: "KYC Verification",
       },
     },
     home: {

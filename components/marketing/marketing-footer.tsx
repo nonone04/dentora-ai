@@ -7,10 +7,22 @@ import { Logo } from "@/components/marketing/logo";
 import { useTranslations } from "@/lib/i18n";
 import type { MarketingNavState } from "@/lib/supabase/post-auth-destination";
 
+const FOOTER_LINK_CLASS = "text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
+
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <span className="text-sm font-semibold text-slate-900 dark:text-white">{title}</span>
+      <nav className="mt-4 flex flex-col gap-3 text-sm">{children}</nav>
+    </div>
+  );
+}
+
 export function MarketingFooter({ navState }: { navState: MarketingNavState }) {
   const t = useTranslations();
   const dashboardHref = navState.authenticated ? navState.dashboardHref : null;
   const year = new Date().getFullYear();
+  const links = t.marketing.footer.links;
 
   const trustItems = [
     { icon: ShieldCheck, label: t.marketing.footer.trust.isolation },
@@ -25,8 +37,8 @@ export function MarketingFooter({ navState }: { navState: MarketingNavState }) {
         aria-hidden="true"
       />
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr]">
-          <div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] lg:gap-8">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400">{t.marketing.footer.tagline}</p>
             <div className="mt-6 flex flex-col gap-2.5">
@@ -39,62 +51,77 @@ export function MarketingFooter({ navState }: { navState: MarketingNavState }) {
             </div>
           </div>
 
-          <div>
-            <span className="text-sm font-semibold text-slate-900 dark:text-white">{t.marketing.footer.product}</span>
-            <nav className="mt-4 flex flex-col gap-3 text-sm">
-              <Link href="/#features" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.features}
-              </Link>
-              <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.pricing}
-              </Link>
-              <Link href="/demo" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.demo}
-              </Link>
-              <Link href="/contact" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                {t.marketing.nav.contact}
-              </Link>
-            </nav>
-          </div>
+          <FooterColumn title={t.marketing.footer.company}>
+            <Link href="/about" className={FOOTER_LINK_CLASS}>
+              {links.about}
+            </Link>
+            <Link href="/pricing" className={FOOTER_LINK_CLASS}>
+              {t.marketing.nav.pricing}
+            </Link>
+            <Link href="/contact" className={FOOTER_LINK_CLASS}>
+              {t.marketing.nav.contact}
+            </Link>
+            <Link href="/demo" className={FOOTER_LINK_CLASS}>
+              {t.marketing.nav.demo}
+            </Link>
+          </FooterColumn>
 
-          <div>
-            <span className="text-sm font-semibold text-slate-900 dark:text-white">{t.marketing.footer.account}</span>
-            <nav className="mt-4 flex flex-col gap-3 text-sm">
-              {navState.authenticated ? (
-                <>
-                  <Link
-                    href="/account/security"
-                    className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  >
-                    {t.marketing.nav.account}
-                  </Link>
-                  <form action={signOut}>
-                    <button
-                      type="submit"
-                      className="text-start text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    >
-                      {t.marketing.nav.signOut}
-                    </button>
-                  </form>
-                  <Link
-                    href={dashboardHref ?? "/pricing"}
-                    className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                  >
-                    {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.nav.choosePlan}
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                    {t.marketing.nav.login}
-                  </Link>
-                  <Link href="/pricing" className="text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                    {t.marketing.nav.getStarted}
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
+          <FooterColumn title={t.marketing.footer.resources}>
+            <Link href="/help-center" className={FOOTER_LINK_CLASS}>
+              {links.helpCenter}
+            </Link>
+            <Link href="/documentation" className={FOOTER_LINK_CLASS}>
+              {links.documentation}
+            </Link>
+            <Link href="/api-docs" className={FOOTER_LINK_CLASS}>
+              {links.api}
+            </Link>
+          </FooterColumn>
+
+          <FooterColumn title={t.marketing.footer.legal}>
+            <Link href="/privacy-policy" className={FOOTER_LINK_CLASS}>
+              {links.privacyPolicy}
+            </Link>
+            <Link href="/terms" className={FOOTER_LINK_CLASS}>
+              {links.termsOfService}
+            </Link>
+            <Link href="/refund-policy" className={FOOTER_LINK_CLASS}>
+              {links.refundPolicy}
+            </Link>
+            <Link href="/cookies" className={FOOTER_LINK_CLASS}>
+              {links.cookiePolicy}
+            </Link>
+            <Link href="/kyc" className={FOOTER_LINK_CLASS}>
+              {links.kycVerification}
+            </Link>
+          </FooterColumn>
+
+          <FooterColumn title={t.marketing.footer.account}>
+            {navState.authenticated ? (
+              <>
+                <Link href="/account/security" className={FOOTER_LINK_CLASS}>
+                  {t.marketing.nav.account}
+                </Link>
+                <form action={signOut}>
+                  <button type="submit" className={`text-start ${FOOTER_LINK_CLASS}`}>
+                    {t.marketing.nav.signOut}
+                  </button>
+                </form>
+                <Link href={dashboardHref ?? "/pricing"} className={FOOTER_LINK_CLASS}>
+                  {dashboardHref ? t.marketing.nav.goToDashboard : t.marketing.nav.choosePlan}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className={FOOTER_LINK_CLASS}>
+                  {t.marketing.nav.login}
+                </Link>
+                <Link href="/pricing" className={FOOTER_LINK_CLASS}>
+                  {t.marketing.nav.getStarted}
+                </Link>
+              </>
+            )}
+          </FooterColumn>
         </div>
 
         <div className="mt-14 flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-200/70 pt-8 sm:flex-row dark:border-white/10">

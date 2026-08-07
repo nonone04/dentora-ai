@@ -1430,7 +1430,9 @@ export const fr = {
     },
     footer: {
       tagline: "L'accueil serein et fiable des cliniques dentaires modernes -- propulsé par l'IA, conçu pour le soin.",
-      product: "Produit",
+      company: "Entreprise",
+      resources: "Ressources",
+      legal: "Mentions légales",
       account: "Compte",
       copyright: "© {year} Dentora AI. Tous droits réservés.",
       madeFor: "Conçu pour les cliniques dentaires du monde entier.",
@@ -1438,6 +1440,17 @@ export const fr = {
         isolation: "Données isolées par clinique",
         rbac: "Contrôle d'accès basé sur les rôles",
         encryption: "Chiffrées en transit et au repos",
+      },
+      links: {
+        about: "À propos",
+        helpCenter: "Centre d'aide",
+        documentation: "Documentation",
+        api: "API",
+        privacyPolicy: "Politique de confidentialité",
+        termsOfService: "Conditions d'utilisation",
+        refundPolicy: "Politique de remboursement",
+        cookiePolicy: "Politique de cookies",
+        kycVerification: "Vérification KYC",
       },
     },
     home: {

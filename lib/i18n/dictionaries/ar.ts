@@ -1415,7 +1415,9 @@ export const ar = {
     },
     footer: {
       tagline: "الاستقبال الهادئ والموثوق لعيادات طب الأسنان الحديثة -- مدعوم بالذكاء الاصطناعي، ومصمم للرعاية.",
-      product: "المنتج",
+      company: "الشركة",
+      resources: "الموارد",
+      legal: "القانونية",
       account: "الحساب",
       copyright: "© {year} Dentora AI. جميع الحقوق محفوظة.",
       madeFor: "مصمم لعيادات طب الأسنان حول العالم.",
@@ -1423,6 +1425,17 @@ export const ar = {
         isolation: "بيانات معزولة لكل عيادة",
         rbac: "التحكم في الوصول حسب الدور",
         encryption: "مشفّرة أثناء النقل والتخزين",
+      },
+      links: {
+        about: "من نحن",
+        helpCenter: "مركز المساعدة",
+        documentation: "التوثيق",
+        api: "واجهة برمجة التطبيقات",
+        privacyPolicy: "سياسة الخصوصية",
+        termsOfService: "شروط الخدمة",
+        refundPolicy: "سياسة الاسترداد",
+        cookiePolicy: "سياسة ملفات تعريف الارتباط",
+        kycVerification: "التحقق من الهوية (KYC)",
       },
     },
     home: {
